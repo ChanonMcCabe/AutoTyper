@@ -1,0 +1,14 @@
+## .NET
+bin/
+obj/
+*.user
+publish/
+
+## Visual Studio
+.vs/
+
+## Rider
+.idea/
+*.sln.iml
+
+.claude
