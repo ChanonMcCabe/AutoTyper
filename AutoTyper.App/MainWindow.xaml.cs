@@ -166,9 +166,18 @@ public partial class MainWindow : FluentWindow
             return;
         }
 
-        if (_appSettings.Hotkey.Combo is { } trigger && combo.Equals(trigger) && !_viewModel.IsTyping)
+        if (_appSettings.Hotkey.Combo is { } trigger && combo.Equals(trigger))
         {
-            StartTyping();
+            if (_viewModel.IsTyping)
+            {
+                // Second press of the trigger while a run is in progress stops
+                // it — same path as the Stop Typing button and the Escape hotkey.
+                _typingCts?.Cancel();
+            }
+            else
+            {
+                StartTyping();
+            }
         }
     }
 
