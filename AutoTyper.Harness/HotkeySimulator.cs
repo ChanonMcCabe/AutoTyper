@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
-using System.Windows.Input;
-using AutoTyper.App;
+using AutoTyper.Core.Input;
 
 namespace AutoTyper.Harness;
 
@@ -75,27 +74,32 @@ internal static class HotkeySimulator
     public static void PressCombo(HotkeyCombo combo)
     {
         var vkKeys = new List<ushort>();
-        if (combo.Modifiers.HasFlag(ModifierKeys.Control))
+        if (combo.Modifiers.HasFlag(HotkeyModifiers.Control))
         {
             vkKeys.Add(VkControl);
         }
 
-        if (combo.Modifiers.HasFlag(ModifierKeys.Alt))
+        if (combo.Modifiers.HasFlag(HotkeyModifiers.Alt))
         {
             vkKeys.Add(VkMenu);
         }
 
-        if (combo.Modifiers.HasFlag(ModifierKeys.Shift))
+        if (combo.Modifiers.HasFlag(HotkeyModifiers.Shift))
         {
             vkKeys.Add(VkShift);
         }
 
-        if (combo.Modifiers.HasFlag(ModifierKeys.Windows))
+        if (combo.Modifiers.HasFlag(HotkeyModifiers.Meta))
         {
             vkKeys.Add(VkLeftWin);
         }
 
-        vkKeys.Add((ushort)KeyInterop.VirtualKeyFromKey(combo.Key));
+        if (!WindowsVirtualKeyMap.TryGetVirtualKey(combo.Key, out ushort virtualKey))
+        {
+            throw new InvalidOperationException($"{combo.Key} has no Windows virtual-key equivalent.");
+        }
+
+        vkKeys.Add(virtualKey);
 
         INPUT[] downs = vkKeys.Select(vk => MakeInput(vk, keyUp: false)).ToArray();
         INPUT[] ups = ((IEnumerable<ushort>)vkKeys).Reverse().Select(vk => MakeInput(vk, keyUp: true)).ToArray();

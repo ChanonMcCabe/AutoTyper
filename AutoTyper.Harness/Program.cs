@@ -3,8 +3,9 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
-using AutoTyper.App;
+using AutoTyper.Desktop;
 using AutoTyper.Core;
+using AutoTyper.Core.Input;
 using AutoTyper.Harness;
 
 var options = new TypingOptions { PassageText = "The quick brown fox jumps over the lazy dog." };
@@ -270,34 +271,25 @@ static extern IntPtr GetForegroundWindow();
 
 static void RunHotkeyTest()
 {
-    var combo = new HotkeyCombo(ModifierKeys.Control | ModifierKeys.Alt, Key.F9);
+    var combo = new HotkeyCombo(HotkeyModifiers.Control | HotkeyModifiers.Alt, HotkeyKey.F9);
     bool fired = false;
 
     var thread = new Thread(() =>
     {
-        var window = new Window
-        {
-            Width = 0,
-            Height = 0,
-            WindowStyle = WindowStyle.None,
-            ShowInTaskbar = false,
-            Visibility = Visibility.Hidden,
-        };
-
-        // Force the native HWND to exist without ever showing the window,
-        // proving the hotkey fires whether or not the app has focus.
-        _ = new WindowInteropHelper(window).EnsureHandle();
-
-        using var manager = new HotkeyManager();
-        manager.HotkeyPressed += (_, _) =>
+        // No window of any kind: WinHotkeyProvider creates its own message-only
+        // window, so all this thread has to supply is a running message pump
+        // (Dispatcher.Run below). That the hotkey still fires proves the
+        // registration is genuinely system-wide and independent of the UI.
+        using var provider = new WinHotkeyProvider();
+        provider.HotkeyPressed += (_, _) =>
         {
             fired = true;
             Console.WriteLine($"Hotkey fired: {combo}");
             Dispatcher.CurrentDispatcher.InvokeShutdown();
         };
 
-        manager.Register(window, combo);
-        Console.WriteLine($"Registered {combo} on a hidden, unfocused window.");
+        provider.Register(combo);
+        Console.WriteLine($"Registered {combo} on a message-only window with no UI.");
         Console.WriteLine("Simulating the combo from a background thread in 500ms...");
 
         _ = Task.Run(async () =>

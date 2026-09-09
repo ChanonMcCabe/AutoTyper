@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:AutoTyper.Desktop"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        x:Class="AutoTyper.Desktop.ConfigWindow"
+        Title="AutoTyper Settings" Height="600" Width="620" MinWidth="520" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Icon="avares://AutoTyper.Desktop/Assets/AppIcon.ico">
+
+    <Grid RowDefinitions="*,Auto,Auto" Margin="12">
+
+        <TabControl Grid.Row="0">
+            <TabItem Header="Appearance">
+                <local:AppearancePanel x:Name="AppearanceTab" />
+            </TabItem>
+            <TabItem Header="General">
+                <local:SettingsPanel x:Name="GeneralPanel" />
+            </TabItem>
+            <TabItem Header="Typing">
+                <local:SettingsPanel x:Name="TypingPanel" />
+            </TabItem>
+            <TabItem Header="Advanced">
+                <local:SettingsPanel x:Name="AdvancedPanel" />
+            </TabItem>
+        </TabControl>
+
+        <ui:InfoBar Grid.Row="1" x:Name="ErrorText"
+                    Severity="Error" IsOpen="False" IsClosable="False"
+                    Margin="0,10,0,0" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Save" Classes="accent" MinWidth="88" Margin="0,0,8,0"
+                    IsDefault="True" Click="SaveButton_Click" />
+            <Button Content="Cancel" MinWidth="88"
+                    IsCancel="True" Click="CancelButton_Click" />
+        </StackPanel>
+
+    </Grid>
+</Window>

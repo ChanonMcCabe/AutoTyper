@@ -1,5 +1,6 @@
 using System.Text;
 using AutoTyper.Core;
+using AutoTyper.Core.Input;
 
 namespace AutoTyper.Harness;
 
@@ -42,6 +43,13 @@ public class FakeKeySender : IKeySender
         Console.Write("[back]");
         return Task.CompletedTask;
     }
+
+    public void CaptureTarget()
+    {
+        // No real window to capture — this sender writes to the console.
+    }
+
+    public Task PrepareForTypingAsync(HotkeyCombo trigger) => Task.CompletedTask;
 
     public string Result => _buffer.ToString();
 }

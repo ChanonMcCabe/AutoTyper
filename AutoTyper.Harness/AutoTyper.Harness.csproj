@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AutoTyper.Core\AutoTyper.Core.csproj" />
-    <ProjectReference Include="..\AutoTyper.App\AutoTyper.App.csproj" />
+    <ProjectReference Include="..\AutoTyper.Desktop\AutoTyper.Desktop.csproj" />
   </ItemGroup>
 
 </Project>

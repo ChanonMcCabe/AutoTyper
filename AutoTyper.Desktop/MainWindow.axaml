@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:AutoTyper.Desktop"
+        x:Class="AutoTyper.Desktop.MainWindow"
+        Title="AutoTyper" Height="560" Width="500" MinWidth="440" MinHeight="520"
+        Icon="avares://AutoTyper.Desktop/Assets/AppIcon.ico">
+
+    <Window.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        </Style>
+        <Style Selector="TextBlock.secondary">
+            <Setter Property="Opacity" Value="0.7" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="*,Auto,Auto,Auto">
+
+        <Border Grid.Row="0" Classes="card" Margin="16,16,16,8">
+            <Grid RowDefinitions="Auto,*,Auto,Auto">
+
+                <TextBlock Grid.Row="0" Text="Passage" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <!--
+                    The scrollbar goes on the TextBox itself, not on a wrapping
+                    ScrollViewer: Avalonia's TextBox already scrolls internally,
+                    and an outer ScrollViewer gives it unbounded height so a long
+                    passage grows past the bottom of the window instead.
+                -->
+                <TextBox Grid.Row="1"
+                         Text="{Binding PassageText}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         VerticalContentAlignment="Top"
+                         Margin="0,0,0,12" MinHeight="120" />
+
+                <Grid Grid.Row="2" Margin="0,0,0,10"
+                      ColumnDefinitions="Auto,80,20,Auto,*">
+                    <TextBlock Grid.Column="0" Text="WPM" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox Grid.Column="1" VerticalAlignment="Center"
+                             Text="{Binding EditableWpm}"
+                             IsEnabled="{Binding IsWpmFieldEnabled}" />
+                    <TextBlock Grid.Column="3" Text="Hotkey" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <local:HotkeyCaptureBox x:Name="HotkeyDisplay" Grid.Column="4" />
+                </Grid>
+
+                <TextBlock Grid.Row="3" Text="{Binding ModeText}"
+                           FontSize="12" Classes="secondary" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16,0,16,8" ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Content="Save" MinWidth="88" Margin="0,0,8,0"
+                        Command="{Binding SaveSettingsCommand}" />
+                <Button Content="Cancel" MinWidth="88"
+                        Command="{Binding CancelSettingsCommand}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Settings" Click="SettingsButton_Click" />
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="16,0,16,10">
+            <Button Content="Activate" Classes="accent" MinWidth="96" Margin="0,0,8,0"
+                    Command="{Binding ActivateCommand}" />
+            <Button Content="Deactivate" MinWidth="96" Margin="0,0,8,0"
+                    Command="{Binding DeactivateCommand}" />
+            <Button Content="Stop Typing" MinWidth="96"
+                    Command="{Binding StopTypingCommand}" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusText}" Margin="16,0,16,14"
+                   FontSize="12" Classes="secondary" TextWrapping="Wrap" />
+    </Grid>
+</Window>

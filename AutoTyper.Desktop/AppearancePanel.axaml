@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AutoTyper.Desktop.AppearancePanel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        </Style>
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="4,12,4,4">
+
+            <Border Classes="card" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="Appearance" FontWeight="SemiBold" Margin="0,0,0,10" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="Theme" />
+                            <TextBlock Classes="caption"
+                                       Text="Follow the system appearance, or force light or dark." />
+                        </StackPanel>
+                        <ComboBox Grid.Column="1" x:Name="ThemeCombo" Width="140" VerticalAlignment="Center"
+                                  SelectedItem="{Binding Theme, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Text="Window" FontWeight="SemiBold" Margin="0,0,0,10" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="Always on top" />
+                            <TextBlock Classes="caption"
+                                       Text="Keep the AutoTyper window above other windows." />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                                      IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

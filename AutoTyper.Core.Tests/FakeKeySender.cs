@@ -1,4 +1,5 @@
 using AutoTyper.Core;
+using AutoTyper.Core.Input;
 
 namespace AutoTyper.Core.Tests;
 
@@ -45,6 +46,18 @@ internal class FakeKeySender : IKeySender
         FocusCount++;
         return Task.CompletedTask;
     }
+
+    public void CaptureTarget() => CaptureTargetCount++;
+
+    public Task PrepareForTypingAsync(HotkeyCombo trigger)
+    {
+        PreparedTrigger = trigger;
+        return Task.CompletedTask;
+    }
+
+    public int CaptureTargetCount { get; private set; }
+
+    public HotkeyCombo? PreparedTrigger { get; private set; }
 
     public string Result => new(_buffer.ToArray());
 }
