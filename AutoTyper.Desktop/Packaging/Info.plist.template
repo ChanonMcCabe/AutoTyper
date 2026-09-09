@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>AutoTyper</string>
+    <key>CFBundleDisplayName</key>
+    <string>AutoTyper</string>
+    <!--
+      Placeholder — confirm/replace before real distribution. This affects
+      code-signing identity and any future auto-update mechanism keyed off
+      bundle ID.
+    -->
+    <key>CFBundleIdentifier</key>
+    <string>com.autotyper.desktop</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleExecutable</key>
+    <string>AutoTyper.Desktop</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon.icns</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <!--
+      Hides the Dock icon and Cmd+Tab entry, matching the Windows build's
+      minimize-to-tray idiom: the app is reachable only via the TrayIcon menu.
+    -->
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>

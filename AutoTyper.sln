@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTyper.Core.Tests", "Aut
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTyper.Desktop", "AutoTyper.Desktop\AutoTyper.Desktop.csproj", "{F74E14F0-A65E-4139-B40C-1CA45A6EFEEA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoTyper.Desktop.Tests", "AutoTyper.Desktop.Tests\AutoTyper.Desktop.Tests.csproj", "{F10186BE-A667-4215-B710-8E7810C08A3F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{F74E14F0-A65E-4139-B40C-1CA45A6EFEEA}.Release|x64.Build.0 = Release|Any CPU
 		{F74E14F0-A65E-4139-B40C-1CA45A6EFEEA}.Release|x86.ActiveCfg = Release|Any CPU
 		{F74E14F0-A65E-4139-B40C-1CA45A6EFEEA}.Release|x86.Build.0 = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|x64.Build.0 = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Debug|x86.Build.0 = Debug|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|x64.ActiveCfg = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|x64.Build.0 = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|x86.ActiveCfg = Release|Any CPU
+		{F10186BE-A667-4215-B710-8E7810C08A3F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -149,6 +149,16 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Checked here rather than at launch: registering the hotkey would
+        // succeed regardless (Accessibility trust gates CGEventPost, not
+        // RegisterEventHotKey), but letting Activate report success while
+        // typing is silently doomed is worse than refusing up front.
+        if (!PlatformServices.CanTypeNow)
+        {
+            _viewModel.StatusText = PlatformServices.PermissionDeniedReason!;
+            return;
+        }
+
         try
         {
             _triggerHotkeyId = _hotkeyProvider.Register(combo);

@@ -34,6 +34,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Lets AutoTyper.Desktop.Tests assert struct layout and four-char-code
+         arithmetic in the internal Carbon P/Invoke declarations without
+         making them public. -->
+    <InternalsVisibleTo Include="AutoTyper.Desktop.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
