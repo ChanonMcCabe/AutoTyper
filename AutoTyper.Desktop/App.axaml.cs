@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,6 +13,13 @@ public partial class App : Application
     /// same instance.
     /// </summary>
     public AppSettings Settings { get; private set; } = new();
+
+    private NativeMenuItem? _startTypingMenuItem;
+    private NativeMenuItem? _pauseResumeMenuItem;
+    private NativeMenuItem? _stopTypingMenuItem;
+    private NativeMenuItem? _activateMenuItem;
+    private NativeMenuItem? _deactivateMenuItem;
+    private TrayIcon? _trayIcon;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -28,9 +36,124 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             desktop.ShutdownRequested += OnShutdownRequested;
             desktop.MainWindow = new MainWindow();
+
+            // Build the tray menu in code
+            BuildTrayMenu();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void BuildTrayMenu()
+    {
+        // TrayIcon.Icons is an attached property on the Application, not a
+        // resource, so it has to be read back through its accessor.
+        if (TrayIcon.GetIcons(this) is { Count: > 0 } trayIcons)
+        {
+            _trayIcon = trayIcons[0];
+        }
+
+        if (_trayIcon is null)
+        {
+            return;
+        }
+
+        var menu = new NativeMenu();
+
+        _startTypingMenuItem = new NativeMenuItem { Header = "Start Typing" };
+        _startTypingMenuItem.Click += (s, e) => MainWindow?.StartTypingFromTray();
+        menu.Add(_startTypingMenuItem);
+
+        _pauseResumeMenuItem = new NativeMenuItem { Header = "Pause" };
+        _pauseResumeMenuItem.Click += (s, e) => MainWindow?.PauseResumeTyping();
+        menu.Add(_pauseResumeMenuItem);
+
+        _stopTypingMenuItem = new NativeMenuItem { Header = "Stop Typing" };
+        _stopTypingMenuItem.Click += (s, e) => MainWindow?.StopTypingFromTray();
+        menu.Add(_stopTypingMenuItem);
+
+        menu.Add(new NativeMenuItemSeparator());
+
+        _activateMenuItem = new NativeMenuItem { Header = "Activate" };
+        _activateMenuItem.Click += (s, e) => MainWindow?.OnActivateMenuItemClick();
+        menu.Add(_activateMenuItem);
+
+        _deactivateMenuItem = new NativeMenuItem { Header = "Deactivate" };
+        _deactivateMenuItem.Click += (s, e) => MainWindow?.OnDeactivateMenuItemClick();
+        menu.Add(_deactivateMenuItem);
+
+        menu.Add(new NativeMenuItemSeparator());
+
+        var restoreMenuItem = new NativeMenuItem { Header = "Restore" };
+        restoreMenuItem.Click += (s, e) => MainWindow?.RestoreFromTray();
+        menu.Add(restoreMenuItem);
+
+        var exitMenuItem = new NativeMenuItem { Header = "Exit" };
+        exitMenuItem.Click += (s, e) =>
+            (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
+        menu.Add(exitMenuItem);
+
+        _trayIcon.Menu = menu;
+
+        // Subscribe to view model changes to update menu
+        if (MainWindow is MainWindow mainWindow)
+        {
+            var viewModel = mainWindow.GetViewModel();
+            viewModel.PropertyChanged += (s, e) => UpdateTrayMenuState();
+            UpdateTrayMenuState();
+        }
+    }
+
+    private void UpdateTrayMenuState()
+    {
+        if (MainWindow is not MainWindow mainWindow)
+        {
+            return;
+        }
+
+        var viewModel = mainWindow.GetViewModel();
+
+        if (_startTypingMenuItem is not null)
+        {
+            _startTypingMenuItem.IsEnabled = viewModel.HasPassage && !viewModel.IsTyping && PlatformServices.CanTypeNow;
+        }
+
+        if (_pauseResumeMenuItem is not null)
+        {
+            _pauseResumeMenuItem.IsEnabled = viewModel.IsTyping;
+            _pauseResumeMenuItem.Header = viewModel.IsPaused ? "Resume" : "Pause";
+        }
+
+        if (_stopTypingMenuItem is not null)
+        {
+            _stopTypingMenuItem.IsEnabled = viewModel.IsTyping;
+        }
+
+        if (_activateMenuItem is not null)
+        {
+            _activateMenuItem.IsEnabled = !viewModel.IsActive && viewModel.HasHotkey && viewModel.HasPassage;
+        }
+
+        if (_deactivateMenuItem is not null)
+        {
+            _deactivateMenuItem.IsEnabled = viewModel.IsActive;
+        }
+
+        if (_trayIcon is not null)
+        {
+            if (viewModel.IsTyping)
+            {
+                _trayIcon.ToolTipText = $"AutoTyper — typing {(int)viewModel.ProgressPercent}%";
+            }
+            else if (viewModel.IsActive)
+            {
+                _trayIcon.ToolTipText = "AutoTyper — active";
+            }
+            else
+            {
+                _trayIcon.ToolTipText = "AutoTyper";
+            }
+        }
     }
 
     private MainWindow? MainWindow =>

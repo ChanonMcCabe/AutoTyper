@@ -54,4 +54,65 @@ public class SpeedResolverTests
 
         Assert.Equal(2.0, wpm); // 2 words / 1 minute, not the 500-600 range
     }
+
+    [Fact]
+    public void EstimateDuration_FlatMode_UsesWordCountOverConfiguredWpm()
+    {
+        var options = new TypingOptions();
+        options.Speed.Wpm = 60;
+
+        TimeSpan estimate = SpeedResolver.EstimateDuration("one two three four five six", options);
+
+        Assert.Equal(TimeSpan.FromMinutes(6 / 60.0), estimate);
+    }
+
+    [Fact]
+    public void EstimateDuration_RangeMode_UsesMidpointOfMinAndMax()
+    {
+        var options = new TypingOptions();
+        options.Speed.RangeModeEnabled = true;
+        options.Speed.MinWpm = 30;
+        options.Speed.MaxWpm = 60;
+
+        TimeSpan estimate = SpeedResolver.EstimateDuration("one two three four five six", options);
+
+        Assert.Equal(TimeSpan.FromMinutes(6 / 45.0), estimate); // midpoint = 45 wpm
+    }
+
+    [Fact]
+    public void EstimateDuration_TimeframeMode_ReturnsFrameMinutes()
+    {
+        var options = new TypingOptions();
+        options.Speed.TimeframeModeEnabled = true;
+        options.Speed.FrameMinutes = 4;
+
+        TimeSpan estimate = SpeedResolver.EstimateDuration("one two three", options);
+
+        Assert.Equal(TimeSpan.FromMinutes(4), estimate);
+    }
+
+    [Fact]
+    public void EstimateDuration_WithStepAwayEnabled_AddsStepAwayTime()
+    {
+        var options = new TypingOptions();
+        options.Speed.Wpm = 60;
+        options.StepAway.Enabled = true;
+        options.StepAway.EveryWords = 2;
+        options.StepAway.DurationSeconds = 30;
+
+        // 6 words / 60 wpm = 6 seconds typing; floor(6/2) = 3 breaks * 30s = 90s.
+        TimeSpan estimate = SpeedResolver.EstimateDuration("one two three four five six", options);
+
+        Assert.Equal(TimeSpan.FromSeconds(6) + TimeSpan.FromSeconds(90), estimate);
+    }
+
+    [Fact]
+    public void EstimateDuration_EmptyPassage_ReturnsZero()
+    {
+        var options = new TypingOptions();
+
+        TimeSpan estimate = SpeedResolver.EstimateDuration("   ", options);
+
+        Assert.Equal(TimeSpan.Zero, estimate);
+    }
 }

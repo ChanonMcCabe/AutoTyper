@@ -27,14 +27,27 @@ public class TypoTyper
     private readonly TypoSettings _typos;
     private readonly PauseSettings _pauses;
     private readonly Random _random;
+    private readonly TypingRunController? _controller;
+    private readonly bool _checkFocus;
 
-    public TypoTyper(IKeySender keySender, TypoSettings typos, PauseSettings pauses, Random random)
+    public TypoTyper(
+        IKeySender keySender,
+        TypoSettings typos,
+        PauseSettings pauses,
+        Random random,
+        TypingRunController? controller = null,
+        bool checkFocus = false)
     {
         _keySender = keySender ?? throw new ArgumentNullException(nameof(keySender));
         _typos = typos ?? throw new ArgumentNullException(nameof(typos));
         _pauses = pauses ?? throw new ArgumentNullException(nameof(pauses));
         _random = random ?? throw new ArgumentNullException(nameof(random));
+        _controller = controller;
+        _checkFocus = checkFocus;
     }
+
+    /// <summary>Total typos injected (and corrected) across every call to <see cref="TypeWordAsync"/>.</summary>
+    public int TyposMade { get; private set; }
 
     /// <summary>Types <paramref name="word"/> at <paramref name="wpm"/>, returning the total simulated time spent.</summary>
     public async Task<double> TypeWordAsync(string word, double wpm, CancellationToken cancellationToken)
@@ -47,6 +60,7 @@ public class TypoTyper
         while (i < word.Length)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await WaitIfNeededAsync(cancellationToken);
             char c = word[i];
 
             bool eligible = _typos.Enabled && QwertyNeighbors.ContainsKey(char.ToLowerInvariant(c));
@@ -58,10 +72,12 @@ public class TypoTyper
                     // Backspaces all the way back to this position; the
                     // retype below is unconditional (no re-rolling the typo
                     // chance), so this always advances even at a 100% rate.
+                    TyposMade++;
                     elapsedMs += await TypeFullWordTypoAsync(word, i, wpm, cancellationToken);
                 }
                 else
                 {
+                    TyposMade++;
                     elapsedMs += await TypePartialTypoAsync(c, wpm, cancellationToken);
                 }
             }
@@ -77,6 +93,7 @@ public class TypoTyper
     {
         double elapsedMs = 0;
 
+        await WaitIfNeededAsync(cancellationToken);
         char wrongChar = GetTypoChar(word[mistakeIndex]);
         await _keySender.SendCharAsync(wrongChar);
         elapsedMs += await DelayAsync(TimingService.GetLetterPause(wpm, _pauses, _random), cancellationToken);
@@ -86,6 +103,7 @@ public class TypoTyper
         for (int j = 0; j < extraChars; j++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await WaitIfNeededAsync(cancellationToken);
             await _keySender.SendCharAsync(word[mistakeIndex + 1 + j]);
             elapsedMs += await DelayAsync(TimingService.GetLetterPause(wpm, _pauses, _random), cancellationToken);
         }
@@ -98,6 +116,7 @@ public class TypoTyper
         for (int j = 0; j < backspaceCount; j++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await WaitIfNeededAsync(cancellationToken);
             await _keySender.SendBackspaceAsync();
             elapsedMs += await DelayAsync(TimingService.GetLetterPause(backspaceWpm, _pauses, _random), cancellationToken);
         }
@@ -109,17 +128,22 @@ public class TypoTyper
     {
         double elapsedMs = 0;
 
+        await WaitIfNeededAsync(cancellationToken);
         char wrongChar = GetTypoChar(correct);
         await _keySender.SendCharAsync(wrongChar);
         elapsedMs += await DelayAsync(TimingService.GetLetterPause(wpm, _pauses, _random), cancellationToken);
 
         // Noticed immediately: a single backspace at boosted speed, no notice delay.
+        await WaitIfNeededAsync(cancellationToken);
         await _keySender.SendBackspaceAsync();
         double boostedWpm = wpm * _pauses.BackspaceSpeedMultiplier * 1.5;
         elapsedMs += await DelayAsync(TimingService.GetLetterPause(boostedWpm, _pauses, _random), cancellationToken);
 
         return elapsedMs;
     }
+
+    private Task WaitIfNeededAsync(CancellationToken cancellationToken) =>
+        _controller?.WaitIfNeededAsync(_keySender, _checkFocus, cancellationToken) ?? Task.CompletedTask;
 
     private async Task<double> SendCharWithDelayAsync(char c, double wpm, CancellationToken cancellationToken)
     {

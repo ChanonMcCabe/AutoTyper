@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:AutoTyper.Desktop"
         x:Class="AutoTyper.Desktop.MainWindow"
-        Title="AutoTyper" Height="560" Width="500" MinWidth="440" MinHeight="520"
+        Title="AutoTyper" Height="610" Width="500" MinWidth="440" MinHeight="570"
         Icon="avares://AutoTyper.Desktop/Assets/AppIcon.ico">
 
     <Window.Styles>
@@ -18,26 +18,31 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="*,Auto,Auto,Auto">
+    <Grid RowDefinitions="*,Auto,Auto,Auto,Auto,Auto">
 
         <Border Grid.Row="0" Classes="card" Margin="16,16,16,8">
-            <Grid RowDefinitions="Auto,*,Auto,Auto">
+            <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
 
-                <TextBlock Grid.Row="0" Text="Passage" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <Grid Grid.Row="0" Margin="0,0,0,6" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Passage" FontWeight="SemiBold" />
+                    <Button Grid.Column="1" Content="Open…" Padding="8,4" Click="OpenButton_Click"
+                            ToolTip.Tip="Load passage from file" />
+                </Grid>
+
                 <!--
                     The scrollbar goes on the TextBox itself, not on a wrapping
                     ScrollViewer: Avalonia's TextBox already scrolls internally,
                     and an outer ScrollViewer gives it unbounded height so a long
                     passage grows past the bottom of the window instead.
                 -->
-                <TextBox Grid.Row="1"
+                <TextBox x:Name="PassageTextBox" Grid.Row="2"
                          Text="{Binding PassageText}"
                          AcceptsReturn="True" TextWrapping="Wrap"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          VerticalContentAlignment="Top"
                          Margin="0,0,0,12" MinHeight="120" />
 
-                <Grid Grid.Row="2" Margin="0,0,0,10"
+                <Grid Grid.Row="3" Margin="0,0,0,10"
                       ColumnDefinitions="Auto,80,20,Auto,*">
                     <TextBlock Grid.Column="0" Text="WPM" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <TextBox Grid.Column="1" VerticalAlignment="Center"
@@ -47,31 +52,43 @@
                     <local:HotkeyCaptureBox x:Name="HotkeyDisplay" Grid.Column="4" />
                 </Grid>
 
-                <TextBlock Grid.Row="3" Text="{Binding ModeText}"
-                           FontSize="12" Classes="secondary" />
+                <StackPanel Grid.Row="4" Orientation="Vertical">
+                    <TextBlock Text="{Binding ModeText}" FontSize="12" Classes="secondary" />
+                    <TextBlock Text="{Binding EstimateText}" FontSize="12" Classes="secondary" />
+                </StackPanel>
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="16,0,16,8" ColumnDefinitions="*,Auto">
+        <ProgressBar Grid.Row="1" Value="{Binding ProgressPercent}" Maximum="100" Height="4"
+                     IsVisible="{Binding IsTyping}" />
+
+        <Grid Grid.Row="2" Margin="16,8,16,8" IsVisible="{Binding IsTyping}">
+            <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center"
+                       FontSize="12" Classes="secondary" />
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="16,0,16,8" ColumnDefinitions="*,Auto">
             <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <Button Content="Save" MinWidth="88" Margin="0,0,8,0"
                         Command="{Binding SaveSettingsCommand}" />
                 <Button Content="Cancel" MinWidth="88"
                         Command="{Binding CancelSettingsCommand}" />
             </StackPanel>
-            <Button Grid.Column="1" Content="Settings" Click="SettingsButton_Click" />
+            <Button Grid.Column="1" Content="Settings" Click="SettingsButton_Click" ToolTip.Tip="Open configuration settings" />
         </Grid>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="16,0,16,10">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="16,0,16,10">
             <Button Content="Activate" Classes="accent" MinWidth="96" Margin="0,0,8,0"
                     Command="{Binding ActivateCommand}" />
             <Button Content="Deactivate" MinWidth="96" Margin="0,0,8,0"
                     Command="{Binding DeactivateCommand}" />
-            <Button Content="Stop Typing" MinWidth="96"
+            <Button Content="Stop Typing" MinWidth="96" Margin="0,0,8,0"
                     Command="{Binding StopTypingCommand}" />
+            <Button x:Name="PauseResumeButton" MinWidth="96"
+                    Command="{Binding PauseResumeCommand}" IsVisible="{Binding IsTyping}" />
         </StackPanel>
 
-        <TextBlock Grid.Row="3" Text="{Binding StatusText}" Margin="16,0,16,14"
+        <TextBlock Grid.Row="5" Text="{Binding StatusText}" Margin="16,0,16,14"
                    FontSize="12" Classes="secondary" TextWrapping="Wrap" />
     </Grid>
 </Window>

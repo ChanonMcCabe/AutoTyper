@@ -23,7 +23,9 @@ internal static class AppSettingsCloner
         result.Pauses ??= new();
         result.StepAway ??= new();
         result.Formatting ??= new();
+        result.Run ??= new();
         result.Hotkey ??= new();
+        result.Presets ??= new();
 
         return result;
     }

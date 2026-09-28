@@ -38,7 +38,11 @@ public static class SettingsSchemaBuilder
                 continue;
             }
 
-            if (property.PropertyType.IsValueType || property.PropertyType == typeof(string) || !property.CanRead)
+            if (property.PropertyType.IsValueType
+                || property.PropertyType == typeof(string)
+                || !property.CanRead
+                || property.GetIndexParameters().Length > 0
+                || typeof(System.Collections.IEnumerable).IsAssignableFrom(property.PropertyType))
             {
                 continue;
             }

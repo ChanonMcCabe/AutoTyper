@@ -48,7 +48,9 @@ public static class SettingsService
             settings.Pauses ??= new();
             settings.StepAway ??= new();
             settings.Formatting ??= new();
+            settings.Run ??= new();
             settings.Hotkey ??= new();
+            settings.Presets ??= new();
 
             return settings;
         }

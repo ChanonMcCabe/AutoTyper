@@ -44,6 +44,10 @@ public class WinInputKeySender : IKeySender
     }
 
     /// <inheritdoc />
+    public bool IsTargetFocused() =>
+        _typingTarget == IntPtr.Zero || NativeMethods.GetForegroundWindow() == _typingTarget;
+
+    /// <inheritdoc />
     public async Task PrepareForTypingAsync(HotkeyCombo trigger)
     {
         if (!trigger.Modifiers.HasFlag(HotkeyModifiers.Alt))

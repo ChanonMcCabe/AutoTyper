@@ -24,4 +24,6 @@ public class TypingOptions
     public StepAwaySettings StepAway { get; init; } = new();
 
     public FormattingSettings Formatting { get; init; } = new();
+
+    public RunSettings Run { get; init; } = new();
 }

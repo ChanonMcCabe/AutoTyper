@@ -3,6 +3,16 @@ using AutoTyper.Core;
 
 namespace AutoTyper.Core.Tests;
 
+/// <summary>Simple synchronous <see cref="IProgress{T}"/> for tests: invokes the callback on the reporting thread, with no SynchronizationContext marshaling to reason about.</summary>
+internal class RecordingProgress : IProgress<TypingProgress>
+{
+    private readonly Action<TypingProgress> _onReport;
+
+    public RecordingProgress(Action<TypingProgress> onReport) => _onReport = onReport;
+
+    public void Report(TypingProgress value) => _onReport(value);
+}
+
 public class TypingEngineTests
 {
     private static TypingOptions CreateOptions(int wpm, bool typosEnabled = false)
@@ -263,6 +273,155 @@ public class TypingEngineTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
         Assert.True(sender.Result.Length < 20, $"Expected only a few characters before cancellation, got {sender.Result.Length}.");
+    }
+
+    [Fact]
+    public async Task RunAsync_WithPausedController_SendsNothingUntilResumed()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(1));
+        var options = CreateOptions(wpm: 6000);
+        var controller = new TypingRunController();
+        controller.Pause();
+
+        Task<TypingRunResult> runTask = engine.RunAsync("hello world", options, sender, CancellationToken.None, controller);
+        await Task.Delay(75);
+
+        Assert.Equal(string.Empty, sender.Result);
+
+        controller.Resume();
+        TypingRunResult result = await runTask;
+
+        Assert.Equal("hello world", sender.Result);
+        Assert.True(result.PausedTime > TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task RunAsync_CancelledWhilePaused_ThrowsOperationCanceled()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(1));
+        var options = CreateOptions(wpm: 6000);
+        var controller = new TypingRunController();
+        controller.Pause();
+        using var cts = new CancellationTokenSource();
+
+        Task runTask = engine.RunAsync("hello world", options, sender, cts.Token, controller);
+        cts.CancelAfter(75);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => runTask);
+    }
+
+    [Fact]
+    public async Task RunAsync_FocusLoss_BlocksSendingUntilTargetRegainsFocus()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(1));
+        var options = CreateOptions(wpm: 6000);
+        bool flipped = false;
+
+        var progress = new RecordingProgress(p =>
+        {
+            if (!flipped && p.CharsTyped >= 3)
+            {
+                flipped = true;
+                sender.TargetFocused = false;
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(300);
+                    sender.TargetFocused = true;
+                });
+            }
+        });
+
+        var stopwatch = Stopwatch.StartNew();
+        await engine.RunAsync("hello world", options, sender, CancellationToken.None, progress: progress);
+        stopwatch.Stop();
+
+        Assert.Equal("hello world", sender.Result);
+        Assert.True(stopwatch.ElapsedMilliseconds >= 250,
+            $"Expected the run to block for ~300ms while focus was lost, took {stopwatch.ElapsedMilliseconds}ms.");
+    }
+
+    [Fact]
+    public async Task RunAsync_PauseOnFocusLossDisabled_IgnoresFocusLoss()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(1));
+        var options = CreateOptions(wpm: 6000);
+        options.Run.PauseOnFocusLoss = false;
+        bool flipped = false;
+
+        var progress = new RecordingProgress(p =>
+        {
+            if (!flipped && p.CharsTyped >= 3)
+            {
+                flipped = true;
+                sender.TargetFocused = false; // never flips back — proves it's ignored, not just fast
+            }
+        });
+
+        var stopwatch = Stopwatch.StartNew();
+        await engine.RunAsync("hello world", options, sender, CancellationToken.None, progress: progress);
+        stopwatch.Stop();
+
+        Assert.Equal("hello world", sender.Result);
+        Assert.True(stopwatch.ElapsedMilliseconds < 250,
+            $"Expected focus loss to be ignored and the run to finish quickly, took {stopwatch.ElapsedMilliseconds}ms.");
+    }
+
+    [Fact]
+    public async Task RunAsync_Progress_CharsTypedNeverDecreasesAndEndsAtTotal()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(1));
+        var options = CreateOptions(wpm: 6000);
+        var reports = new List<TypingProgress>();
+        var progress = new RecordingProgress(reports.Add);
+
+        await engine.RunAsync("hello world", options, sender, CancellationToken.None, progress: progress);
+
+        Assert.NotEmpty(reports);
+        for (int i = 1; i < reports.Count; i++)
+        {
+            Assert.True(reports[i].CharsTyped >= reports[i - 1].CharsTyped);
+        }
+
+        Assert.Equal("hello world".Length, reports[^1].TotalChars);
+        Assert.Equal(reports[^1].TotalChars, reports[^1].CharsTyped);
+    }
+
+    [Fact]
+    public async Task RunAsync_Result_TyposMadeIsPositiveWhenTyposFireOften()
+    {
+        // Same setup as RunAsync_WithTyposEnabled_InjectsTyposAtRoughlyTheTargetRate,
+        // which already establishes this seed/word/probability combination
+        // reliably produces several typos — reused here so the assertion on
+        // TyposMade doesn't need a slow 100%-probability run to be sure of a
+        // nonzero count.
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(42));
+        string word = new('a', 150);
+        var options = CreateOptions(wpm: 6000, typosEnabled: true);
+
+        TypingRunResult result = await engine.RunAsync(word, options, sender, CancellationToken.None);
+
+        Assert.Equal(word, sender.Result);
+        Assert.True(result.TyposMade > 0);
+    }
+
+    [Fact]
+    public async Task RunAsync_Result_TyposMadeIsZeroWhenTyposDisabled()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(42));
+        string word = new('a', 150);
+        var options = CreateOptions(wpm: 6000);
+
+        TypingRunResult result = await engine.RunAsync(word, options, sender, CancellationToken.None);
+
+        Assert.Equal(word, sender.Result);
+        Assert.Equal(0, result.TyposMade);
     }
 
     [Fact]

@@ -42,5 +42,9 @@ public class AppSettings
 
     public FormattingSettings Formatting { get; set; } = new();
 
+    public RunSettings Run { get; set; } = new();
+
     public HotkeySettings Hotkey { get; set; } = new();
+
+    public List<TypingPreset> Presets { get; set; } = new();
 }

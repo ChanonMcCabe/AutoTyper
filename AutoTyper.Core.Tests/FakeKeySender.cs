@@ -18,6 +18,9 @@ internal class FakeKeySender : IKeySender
 
     public int FocusCount { get; private set; }
 
+    /// <summary>Settable by tests to simulate the target window gaining/losing focus.</summary>
+    public bool TargetFocused { get; set; } = true;
+
     public Task SendCharAsync(char c)
     {
         _buffer.Add(c);
@@ -54,6 +57,8 @@ internal class FakeKeySender : IKeySender
         PreparedTrigger = trigger;
         return Task.CompletedTask;
     }
+
+    public bool IsTargetFocused() => TargetFocused;
 
     public int CaptureTargetCount { get; private set; }
 

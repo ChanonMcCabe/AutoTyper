@@ -240,4 +240,33 @@ public class HotkeyTests
         Assert.Equal(0x78, f9);
         Assert.Equal(0x1B, escape);
     }
+
+    [Fact]
+    public void Validate_PauseComboUnsetOrDistinct_HasNoErrors()
+    {
+        var trigger = new HotkeyCombo(HotkeyModifiers.Control | HotkeyModifiers.Alt, HotkeyKey.F9);
+
+        Assert.Empty(new HotkeySettings { Combo = trigger }.Validate());
+        Assert.Empty(new HotkeySettings
+        {
+            Combo = trigger,
+            PauseCombo = new HotkeyCombo(HotkeyModifiers.Control | HotkeyModifiers.Alt, HotkeyKey.F10),
+        }.Validate());
+    }
+
+    [Fact]
+    public void Validate_PauseComboSameAsTrigger_IsRejected()
+    {
+        var trigger = new HotkeyCombo(HotkeyModifiers.Control | HotkeyModifiers.Alt, HotkeyKey.F9);
+
+        Assert.Single(new HotkeySettings { Combo = trigger, PauseCombo = trigger }.Validate());
+    }
+
+    [Fact]
+    public void Validate_PauseComboEscape_IsRejected()
+    {
+        var settings = new HotkeySettings { PauseCombo = new HotkeyCombo(HotkeyModifiers.None, HotkeyKey.Escape) };
+
+        Assert.Single(settings.Validate());
+    }
 }

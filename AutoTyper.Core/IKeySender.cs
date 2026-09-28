@@ -55,4 +55,14 @@ public interface IKeySender
     /// keystroke being sent.
     /// </remarks>
     Task PrepareForTypingAsync(HotkeyCombo trigger);
+
+    /// <summary>
+    /// Whether the captured target currently has keyboard focus. Polled by
+    /// <see cref="TypingRunController"/> to pause a run automatically when
+    /// <see cref="Settings.RunSettings.PauseOnFocusLoss"/> is on and the user
+    /// clicks into a different window. Defaults to always-focused, so senders
+    /// with no real target to compare against (tests, or a platform that
+    /// hasn't implemented this) leave focus-loss pausing with no effect.
+    /// </summary>
+    bool IsTargetFocused() => true;
 }

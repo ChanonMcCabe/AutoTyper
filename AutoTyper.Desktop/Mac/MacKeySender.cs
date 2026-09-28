@@ -17,7 +17,9 @@ namespace AutoTyper.Desktop.Mac;
 /// <see cref="FocusTargetAsync"/> and <see cref="PrepareForTypingAsync"/> are
 /// all no-ops — see their doc comments for why. This means the "Step Away"
 /// feature (<c>StepAwaySettings.Enabled</c>) silently has no effect on
-/// macOS: the passage types straight through a scheduled break. Typing
+/// macOS: the passage types straight through a scheduled break. Likewise
+/// <c>IsTargetFocused</c> keeps its always-true default, so
+/// <c>RunSettings.PauseOnFocusLoss</c> has no effect here either. Typing
 /// itself is unaffected, because <c>CGEventPost</c> delivers to whatever has
 /// OS-level keyboard focus regardless of what this process last activated,
 /// exactly like <c>SendInput</c> on Windows.

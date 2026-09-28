@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using AutoTyper.Core.Settings;
 
@@ -23,7 +24,22 @@ public class TypingEngine
         _random = random ?? new Random();
     }
 
-    public async Task RunAsync(string passage, TypingOptions options, IKeySender keySender, CancellationToken cancellationToken)
+    /// <summary>
+    /// Types <paramref name="passage"/> and returns a summary once the run
+    /// completes. <paramref name="controller"/> lets the caller pause/resume
+    /// the run and observe focus-loss/step-away waits; when omitted, a private
+    /// controller is created internally so the pause/focus-wait code paths are
+    /// always exercised uniformly, it just never gets paused externally.
+    /// <paramref name="progress"/>, when supplied, is reported after every
+    /// token and on every state change.
+    /// </summary>
+    public async Task<TypingRunResult> RunAsync(
+        string passage,
+        TypingOptions options,
+        IKeySender keySender,
+        CancellationToken cancellationToken,
+        TypingRunController? controller = null,
+        IProgress<TypingProgress>? progress = null)
     {
         ArgumentNullException.ThrowIfNull(passage);
         ArgumentNullException.ThrowIfNull(options);
@@ -37,94 +53,166 @@ public class TypingEngine
             passage = string.Join(" ", passage.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
 
-        double baseWpm = SpeedResolver.ResolveBaseWpm(passage, options.Speed, _random);
-        double driftAmount = options.Speed.DriftEnabled ? options.Speed.DriftAmount : 0;
-        var driftTracker = new WpmDriftTracker(baseWpm, driftAmount, _random);
-        var burstController = new BurstController(options.Bursts, _random);
-        var stepAwayController = new StepAwayController(options.StepAway);
-        var typoTyper = new TypoTyper(keySender, options.Typos, options.Pauses, _random);
+        var runController = controller ?? new TypingRunController();
+        bool checkFocus = options.Run.PauseOnFocusLoss;
+        int totalChars = passage.Length;
+        int charsTyped = 0;
+        int wordsTyped = 0;
+        int stepAways = 0;
+        double currentWpmForProgress = 0;
+        var stopwatch = Stopwatch.StartNew();
 
-        List<string> tokens = SplitPreservingWhitespace(passage).ToList();
-        int pos = 0;
-
-        while (pos < tokens.Count)
+        void ReportProgress(RunState state)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            string token = tokens[pos];
+            double charsPerSec = currentWpmForProgress * 5 / 60.0;
+            int remainingChars = Math.Max(0, totalChars - charsTyped);
+            TimeSpan estimatedRemaining = charsPerSec > 0
+                ? TimeSpan.FromSeconds(remainingChars / charsPerSec)
+                : TimeSpan.Zero;
+            progress?.Report(new TypingProgress(charsTyped, totalChars, currentWpmForProgress, estimatedRemaining, state));
+        }
 
-            if (IsWhitespaceToken(token))
+        void OnControllerStateChanged(object? sender, RunState state) => ReportProgress(state);
+
+        // Shared tails for the four places a token finishes below (plain
+        // word/space and their burst-loop counterparts) so the
+        // charsTyped/wordsTyped bookkeeping and progress report stay in sync.
+        void RecordSpace(string token)
+        {
+            charsTyped += token.Length;
+            ReportProgress(runController.State);
+        }
+
+        void RecordWord(string token)
+        {
+            charsTyped += token.Length;
+            wordsTyped++;
+            ReportProgress(runController.State);
+        }
+
+        runController.StateChanged += OnControllerStateChanged;
+        try
+        {
+            double baseWpm = SpeedResolver.ResolveBaseWpm(passage, options.Speed, _random);
+            double driftAmount = options.Speed.DriftEnabled ? options.Speed.DriftAmount : 0;
+            var driftTracker = new WpmDriftTracker(baseWpm, driftAmount, _random);
+            var burstController = new BurstController(options.Bursts, _random);
+            var stepAwayController = new StepAwayController(options.StepAway);
+            var typoTyper = new TypoTyper(keySender, options.Typos, options.Pauses, _random, runController, checkFocus);
+            currentWpmForProgress = baseWpm;
+
+            List<string> tokens = SplitPreservingWhitespace(passage).ToList();
+            int pos = 0;
+
+            while (pos < tokens.Count)
             {
-                await keySender.SendCharAsync(token[0]);
-                double spaceMs = await DelayAsync(TimingService.GetLetterPause(driftTracker.CurrentWpm, options.Pauses, _random), cancellationToken);
-                burstController.AdvanceCooldown(spaceMs);
-                pos++;
-                continue;
-            }
+                cancellationToken.ThrowIfCancellationRequested();
+                await runController.WaitIfNeededAsync(keySender, checkFocus, cancellationToken);
+                string token = tokens[pos];
 
-            driftTracker.AdvanceWord();
-            double wpm = driftTracker.CurrentWpm;
-
-            if (burstController.ShouldStartBurst())
-            {
-                await DelayAsync(TimingService.GetPreBurstPause(options.Bursts, _random), cancellationToken);
-
-                int burstWordsRemaining = burstController.GetBurstWordCount();
-                double burstWpm = burstController.ApplyBurstSpeed(wpm);
-
-                while (burstWordsRemaining > 0 && pos < tokens.Count)
+                if (IsWhitespaceToken(token))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    string burstToken = tokens[pos];
-
-                    if (IsWhitespaceToken(burstToken))
-                    {
-                        await keySender.SendCharAsync(burstToken[0]);
-                        await DelayAsync(TimingService.GetLetterPause(burstWpm, options.Pauses, _random), cancellationToken);
-                        pos++;
-                        continue;
-                    }
-
-                    await typoTyper.TypeWordAsync(burstToken, burstWpm, cancellationToken);
-                    await MaybeLongPauseAsync(burstToken, options.Pauses, cancellationToken);
+                    await keySender.SendCharAsync(token[0]);
+                    double spaceMs = await DelayAsync(TimingService.GetLetterPause(driftTracker.CurrentWpm, options.Pauses, _random), cancellationToken);
+                    burstController.AdvanceCooldown(spaceMs);
+                    currentWpmForProgress = driftTracker.CurrentWpm;
+                    RecordSpace(token);
                     pos++;
-                    burstWordsRemaining--;
-
-                    if (burstWordsRemaining > 0)
-                    {
-                        driftTracker.AdvanceWord();
-                    }
+                    continue;
                 }
 
-                await DelayAsync(TimingService.GetPostBurstPause(options.Bursts, _random), cancellationToken);
-                burstController.OnBurstFinished();
-            }
-            else
-            {
-                double wordElapsedMs = await typoTyper.TypeWordAsync(token, wpm, cancellationToken);
-                burstController.AdvanceCooldown(wordElapsedMs);
-                await MaybeLongPauseAsync(token, options.Pauses, cancellationToken);
+                driftTracker.AdvanceWord();
+                double wpm = driftTracker.CurrentWpm;
+                currentWpmForProgress = wpm;
 
-                stepAwayController.AdvanceWord();
-                if (stepAwayController.ShouldStepAway())
+                if (burstController.ShouldStartBurst())
                 {
-                    double awayMs = 0;
-                    try
+                    await DelayAsync(TimingService.GetPreBurstPause(options.Bursts, _random), cancellationToken);
+
+                    int burstWordsRemaining = burstController.GetBurstWordCount();
+                    double burstWpm = burstController.ApplyBurstSpeed(wpm);
+                    currentWpmForProgress = burstWpm;
+
+                    while (burstWordsRemaining > 0 && pos < tokens.Count)
                     {
-                        await keySender.BlurTargetAsync();
-                        awayMs = await DelayAsync(TimingService.GetStepAwayDurationMs(options.StepAway, _random), cancellationToken);
-                    }
-                    finally
-                    {
-                        // Always hand focus back — even if the delay was cancelled,
-                        // the user's window must not be left deactivated.
-                        await keySender.FocusTargetAsync();
+                        cancellationToken.ThrowIfCancellationRequested();
+                        await runController.WaitIfNeededAsync(keySender, checkFocus, cancellationToken);
+                        string burstToken = tokens[pos];
+
+                        if (IsWhitespaceToken(burstToken))
+                        {
+                            await keySender.SendCharAsync(burstToken[0]);
+                            await DelayAsync(TimingService.GetLetterPause(burstWpm, options.Pauses, _random), cancellationToken);
+                            RecordSpace(burstToken);
+                            pos++;
+                            continue;
+                        }
+
+                        await typoTyper.TypeWordAsync(burstToken, burstWpm, cancellationToken);
+                        await MaybeLongPauseAsync(burstToken, options.Pauses, cancellationToken);
+                        RecordWord(burstToken);
+                        pos++;
+                        burstWordsRemaining--;
+
+                        if (burstWordsRemaining > 0)
+                        {
+                            driftTracker.AdvanceWord();
+                        }
                     }
 
-                    burstController.AdvanceCooldown(awayMs);
+                    await DelayAsync(TimingService.GetPostBurstPause(options.Bursts, _random), cancellationToken);
+                    burstController.OnBurstFinished();
                 }
+                else
+                {
+                    double wordElapsedMs = await typoTyper.TypeWordAsync(token, wpm, cancellationToken);
+                    burstController.AdvanceCooldown(wordElapsedMs);
+                    await MaybeLongPauseAsync(token, options.Pauses, cancellationToken);
+                    RecordWord(token);
 
-                pos++;
+                    stepAwayController.AdvanceWord();
+                    if (stepAwayController.ShouldStepAway())
+                    {
+                        double awayMs = 0;
+                        runController.SetState(RunState.SteppedAway);
+                        try
+                        {
+                            await keySender.BlurTargetAsync();
+                            awayMs = await DelayAsync(TimingService.GetStepAwayDurationMs(options.StepAway, _random), cancellationToken);
+                            stepAways++;
+                        }
+                        finally
+                        {
+                            // Always hand focus back — even if the delay was cancelled,
+                            // the user's window must not be left deactivated.
+                            await keySender.FocusTargetAsync();
+                            runController.SetState(RunState.Typing);
+                        }
+
+                        burstController.AdvanceCooldown(awayMs);
+                    }
+
+                    pos++;
+                }
             }
+
+            stopwatch.Stop();
+            TimeSpan pausedTime = runController.PausedTime;
+            TimeSpan activeTime = stopwatch.Elapsed - pausedTime;
+            double effectiveWpm = activeTime.TotalMinutes > 0 ? wordsTyped / activeTime.TotalMinutes : 0;
+
+            return new TypingRunResult(
+                stopwatch.Elapsed,
+                pausedTime,
+                charsTyped,
+                wordsTyped,
+                typoTyper.TyposMade,
+                stepAways,
+                effectiveWpm);
+        }
+        finally
+        {
+            runController.StateChanged -= OnControllerStateChanged;
         }
     }
 

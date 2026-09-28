@@ -29,6 +29,10 @@ public class MainViewModel : INotifyPropertyChanged
     private string _statusText = "Inactive";
     private bool _isActive;
     private bool _isTyping;
+    private bool _isPaused;
+    private double _progressPercent;
+    private string _progressText = string.Empty;
+    private string _estimateText = string.Empty;
 
     public MainViewModel()
     {
@@ -47,6 +51,13 @@ public class MainViewModel : INotifyPropertyChanged
         SaveSettingsCommand = new RelayCommand(() => SaveSettingsRequested?.Invoke(this, EventArgs.Empty));
 
         CancelSettingsCommand = new RelayCommand(() => CancelSettingsRequested?.Invoke(this, EventArgs.Empty));
+
+        PauseResumeCommand = new RelayCommand(
+            () => PauseResumeRequested?.Invoke(this, EventArgs.Empty),
+            () => IsTyping);
+
+        LoadPassageCommand = new RelayCommand(
+            () => LoadPassageRequested?.Invoke(this, EventArgs.Empty));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -60,6 +71,10 @@ public class MainViewModel : INotifyPropertyChanged
     public event EventHandler? SaveSettingsRequested;
 
     public event EventHandler? CancelSettingsRequested;
+
+    public event EventHandler? PauseResumeRequested;
+
+    public event EventHandler? LoadPassageRequested;
 
     public string PassageText
     {
@@ -136,8 +151,33 @@ public class MainViewModel : INotifyPropertyChanged
             if (SetField(ref _isTyping, value))
             {
                 ((RelayCommand)StopTypingCommand).RaiseCanExecuteChanged();
+                ((RelayCommand)PauseResumeCommand).RaiseCanExecuteChanged();
             }
         }
+    }
+
+    public bool IsPaused
+    {
+        get => _isPaused;
+        set => SetField(ref _isPaused, value);
+    }
+
+    public double ProgressPercent
+    {
+        get => _progressPercent;
+        set => SetField(ref _progressPercent, value);
+    }
+
+    public string ProgressText
+    {
+        get => _progressText;
+        set => SetField(ref _progressText, value);
+    }
+
+    public string EstimateText
+    {
+        get => _estimateText;
+        set => SetField(ref _estimateText, value);
     }
 
     public ICommand ActivateCommand { get; }
@@ -149,6 +189,10 @@ public class MainViewModel : INotifyPropertyChanged
     public ICommand SaveSettingsCommand { get; }
 
     public ICommand CancelSettingsCommand { get; }
+
+    public ICommand PauseResumeCommand { get; }
+
+    public ICommand LoadPassageCommand { get; }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
