@@ -9,12 +9,13 @@ AutoTyper is a cross-platform (Windows/macOS) desktop utility that types a saved
 ## Commands
 
 ```
-dotnet build AutoTyper.sln              # build everything
+./scripts/verify.ps1                    # build + run both test suites; compact output, exit 1 on failure
+./scripts/verify.ps1 -Project Core -Filter "FullyQualifiedName~TypingEngineTests"   # fast inner loop
 dotnet run --project AutoTyper.Desktop  # run the app
-dotnet test                             # run all tests (Core.Tests + Desktop.Tests)
-dotnet test --filter "FullyQualifiedName~TypingEngineTests"   # run one test class
-dotnet test --filter "FullyQualifiedName~TypingEngineTests.MethodName"  # run one test
+dotnet build AutoTyper.sln              # build everything, including the Harness (rarely needed)
 ```
+
+`scripts/verify.ps1` is the standard verification step: it runs `dotnet test` on `AutoTyper.Core.Tests` and `AutoTyper.Desktop.Tests` (which builds only what they need — never the Harness) and prints just compiler errors, failed tests with their message and in-repo `file:line`, and pass/fail totals. From Git Bash, invoke it as `powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify.ps1`.
 
 `AutoTyper.Harness` is a Windows-only (`net8.0-windows`, WPF) internal dev tool for driving real typing against Notepad — not part of the shipped app, not built/run as part of normal iteration. It's invoked with flags (`--real`, `--step-away`, `--spacing`, `--hotkey-test`, `--diag-timing`); see `AutoTyper.Harness/Program.cs`.
 
@@ -57,5 +58,9 @@ Light hand-rolled MVVM (no framework): `MainViewModel` implements `INotifyProper
 
 - Avalonia is pinned to the 11.x line and FluentAvaloniaUI to 2.4.0 (not 12.x/2.5.1+/3.x) because those newer lines require net10.0, which would split the Desktop project off the rest of the solution's net8.0 target — see the comment in `AutoTyper.Desktop/AutoTyper.Desktop.csproj`.
 - macOS builds are ad-hoc signed, not notarized (no paid Apple Developer account); Gatekeeper blocks first launch until the user right-click → Open.
-- This repo has a `.claude/agents/` directory with specialist subagents (`typing-logic` for Core engine/timing changes, `gui-designer` for Avalonia UI, `git-manager` for git operations, `test-agent` for build+test verification) — prefer delegating to the matching specialist for in-scope changes rather than editing those areas directly.
-- `gui-designer` and `typing-logic` already spawn `test-agent` after every change they make, per their own briefs. When the main agent edits code directly instead of delegating — e.g. a fix that falls outside every specialist's stated scope, such as `AutoTyper.Core/Settings` infrastructure — it must do the same: invoke `test-agent` (via the `Agent` tool, waited on rather than backgrounded) after the change, before reporting the change as done.
+## Workflow
+
+- **Default: edit directly, verify with one command.** The main agent makes code changes itself and runs `scripts/verify.ps1` once a change is complete (not after every individual edit). While iterating on one area, use `-Project`/`-Filter` to run only the relevant tests, then do one full run before reporting done. Do not spawn a subagent just to build or run tests.
+- **On a failure, fix it inline.** The script already reports the failing test's message and `file:line` — read that code and fix it. Reach for `issue-investigator` only when the cause is still unclear after looking at the failing code (e.g. an intermittent failure, or a bug that spans several layers).
+- **Specialist agents are opt-in, not the default route.** `.claude/agents/` has `typing-logic` (Core engine/timing), `gui-designer` (Avalonia UI), `issue-investigator` (read-only root-causing), `stability-reviewer` (read-only crash/perf audit) and `git-manager` (git operations). Use one when the user asks for it, or for a large self-contained task that benefits from running in parallel with other work. Every subagent starts with no context, so delegating a small change costs more than making it. The specialists' briefs remain the reference for their area's conventions (min/max clamping and `Random` injection in `typing-logic.md`; Avalonia gotchas and design-approval rules in `gui-designer.md`) — read them when working in that area.
+- **Never run two builds at once.** Parallel agents share `bin/`/`obj/`, so if work is split across agents, only one of them runs `verify.ps1` at a time.
