@@ -330,7 +330,10 @@ public static class ThemeManager
         // so adding the custom theme after FluentAvalonia's base theme ensures our ControlThemes are used.
         try
         {
-            _ahkClassicStyleInclude = new StyleInclude(new Uri("avares://AutoTyper.Desktop/AhkClassicTheme.axaml"));
+            _ahkClassicStyleInclude = new StyleInclude(new Uri("avares://AutoTyper.Desktop/"))
+            {
+                Source = new Uri("avares://AutoTyper.Desktop/AhkClassicTheme.axaml")
+            };
             Application.Current.Styles.Add(_ahkClassicStyleInclude);
         }
         catch (Exception ex)
@@ -354,7 +357,15 @@ public static class ThemeManager
         // Remove the custom ControlThemes by removing the StyleInclude.
         if (_ahkClassicStyleInclude is not null)
         {
-            Application.Current.Styles.Remove(_ahkClassicStyleInclude);
+            try
+            {
+                Application.Current.Styles.Remove(_ahkClassicStyleInclude);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to remove AhkClassic theme: {ex.Message}");
+            }
+
             _ahkClassicStyleInclude = null;
         }
 
