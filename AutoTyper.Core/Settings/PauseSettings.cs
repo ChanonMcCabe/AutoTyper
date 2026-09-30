@@ -7,7 +7,7 @@ namespace AutoTyper.Core.Settings;
 /// happens relative to normal typing — all previously hardcoded constants in
 /// the engine, now user-configurable.
 /// </summary>
-public class PauseSettings : SettingsGroupBase
+public class PauseSettings : SettingsGroupBase, IValidatableSetting
 {
     private double _jitterPercent = 30;
     private int _longPauseMinMs = 300;
@@ -40,5 +40,13 @@ public class PauseSettings : SettingsGroupBase
     {
         get => _backspaceSpeedMultiplier;
         set => SetField(ref _backspaceSpeedMultiplier, value);
+    }
+
+    public IEnumerable<string> Validate()
+    {
+        if (LongPauseMinMs > LongPauseMaxMs)
+        {
+            yield return "Long Pause After Sentence Min must not exceed its Max.";
+        }
     }
 }

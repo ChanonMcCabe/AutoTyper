@@ -25,21 +25,35 @@ namespace AutoTyper.Desktop;
 public partial class SettingsPanel : UserControl
 {
     private readonly List<(SettingDescriptor Descriptor, Control Row)> _rows = [];
+    private readonly List<INotifyPropertyChanged> _observedGroups = [];
 
     public SettingsPanel()
     {
         InitializeComponent();
     }
 
+    /// <summary>
+    /// Replaces the panel's contents. Safe to call repeatedly (the Config
+    /// window rebinds after loading a preset): handlers on the previous
+    /// groups are detached first so discarded groups don't keep refreshing
+    /// this panel.
+    /// </summary>
     public void SetDescriptors(IReadOnlyList<SettingDescriptor> descriptors)
     {
         ArgumentNullException.ThrowIfNull(descriptors);
 
+        foreach (INotifyPropertyChanged group in _observedGroups)
+        {
+            group.PropertyChanged -= OnGroupPropertyChanged;
+        }
+
+        _observedGroups.Clear();
         foreach (object group in descriptors.Select(d => d.GroupInstance).Distinct())
         {
             if (group is INotifyPropertyChanged notifier)
             {
-                notifier.PropertyChanged += (_, _) => RefreshVisibility();
+                notifier.PropertyChanged += OnGroupPropertyChanged;
+                _observedGroups.Add(notifier);
             }
         }
 
@@ -183,16 +197,16 @@ public partial class SettingsPanel : UserControl
 
     /// <remarks>
     /// Avalonia has no <c>UpdateSourceTrigger</c>: a two-way binding writes back
-    /// as the value changes. That is what the checkbox and slider already asked
-    /// for explicitly in the WPF build, and it makes the text box consistent
-    /// with them — a <c>DependsOn</c> rule driven by a text field now reacts as
-    /// you type rather than waiting for focus to leave.
+    /// as the value changes, so a <c>DependsOn</c> rule driven by a text field
+    /// reacts as you type rather than waiting for focus to leave.
     /// </remarks>
     private static Binding Bind(SettingDescriptor descriptor, BindingMode mode) =>
         new(descriptor.Name) { Source = descriptor.GroupInstance, Mode = mode };
 
     private static bool IsNumeric(Type type) =>
         type == typeof(int) || type == typeof(double) || type == typeof(float) || type == typeof(long);
+
+    private void OnGroupPropertyChanged(object? sender, PropertyChangedEventArgs e) => RefreshVisibility();
 
     private void RefreshVisibility()
     {

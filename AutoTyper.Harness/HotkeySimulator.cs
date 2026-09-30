@@ -5,7 +5,7 @@ namespace AutoTyper.Harness;
 
 /// <summary>
 /// Test-only helper: synthesizes a modifier+key combo press via SendInput so
-/// the Phase 4 hotkey test can simulate a user pressing a global hotkey
+/// the <c>--hotkey-test</c> run can simulate a user pressing a global hotkey
 /// without any real input device. Separate from <see cref="WinInputKeySender"/>,
 /// which sends literal Unicode characters rather than virtual-key combos.
 /// </summary>

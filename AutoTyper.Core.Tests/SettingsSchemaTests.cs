@@ -85,6 +85,52 @@ public class SettingsSchemaTests
     }
 
     [Fact]
+    public void Validate_RejectsLongPauseMinGreaterThanMax()
+    {
+        var options = new TypingOptions();
+        options.Pauses.LongPauseMinMs = 2000;
+        options.Pauses.LongPauseMaxMs = 500;
+
+        IReadOnlyList<string> errors = SettingsValidator.Validate(SettingsSchemaBuilder.Build(options));
+
+        Assert.Contains(errors, e => e.Contains("Long Pause"));
+    }
+
+    [Fact]
+    public void Validate_RejectsInvertedBurstRangesOnlyWhileBurstsEnabled()
+    {
+        var options = new TypingOptions();
+        options.Bursts.PreBurstPauseMinMs = 500;
+        options.Bursts.PreBurstPauseMaxMs = 100;
+        options.Bursts.PostBurstPauseMinMs = 900;
+        options.Bursts.PostBurstPauseMaxMs = 100;
+        options.Bursts.CooldownMinMs = 9000;
+        options.Bursts.CooldownMaxMs = 1000;
+
+        Assert.Empty(SettingsValidator.Validate(SettingsSchemaBuilder.Build(options)));
+
+        options.Bursts.Enabled = true;
+        IReadOnlyList<string> errors = SettingsValidator.Validate(SettingsSchemaBuilder.Build(options));
+
+        Assert.Contains(errors, e => e.Contains("Pre-Burst"));
+        Assert.Contains(errors, e => e.Contains("Post-Burst"));
+        Assert.Contains(errors, e => e.Contains("Cooldown"));
+    }
+
+    [Fact]
+    public void Validate_RejectsInvertedNoticeDelayOnlyWhileTyposEnabled()
+    {
+        var options = new TypingOptions();
+        options.Typos.NoticeDelayMinMs = 900;
+        options.Typos.NoticeDelayMaxMs = 100;
+
+        Assert.Contains(SettingsValidator.Validate(SettingsSchemaBuilder.Build(options)), e => e.Contains("Notice Delay"));
+
+        options.Typos.Enabled = false;
+        Assert.Empty(SettingsValidator.Validate(SettingsSchemaBuilder.Build(options)));
+    }
+
+    [Fact]
     public void Validate_AcceptsDefaultSettings()
     {
         var options = new TypingOptions();
@@ -99,13 +145,12 @@ public class SettingsSchemaTests
     public void Deserialize_OldJsonMissingNewerGroupsAndFields_FillsInDefaults()
     {
         // Simulates a settings file saved before BurstSettings (and
-        // TypoSettings.FullWordTypoRatioPercent) existed: the JSON only has
-        // "PassageText" and a partial "Speed" object. This is the same
-        // deserialize-onto-a-defaulted-instance pattern AutoTyper.App's
+        // TypoSettings.FullWordTypoRatioPercent) existed: the JSON only has a
+        // partial "Speed" object. This is the same
+        // deserialize-onto-a-defaulted-instance pattern AutoTyper.Desktop's
         // SettingsService relies on for graceful migration.
         const string oldJson = """
             {
-              "PassageText": "hello",
               "Speed": { "Wpm": 55 }
             }
             """;
@@ -114,7 +159,6 @@ public class SettingsSchemaTests
         TypingOptions? loaded = JsonSerializer.Deserialize<TypingOptions>(oldJson, jsonOptions);
 
         Assert.NotNull(loaded);
-        Assert.Equal("hello", loaded!.PassageText);
         Assert.Equal(55, loaded.Speed.Wpm);
 
         // Fields and whole groups absent from the old JSON fall back to defaults.

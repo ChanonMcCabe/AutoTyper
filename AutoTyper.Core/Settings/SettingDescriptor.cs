@@ -30,7 +30,7 @@ public sealed class SettingDescriptor
     /// <summary>Reads the sibling property named by <see cref="DependsOnProperty"/>, or null if this setting has no dependency.</summary>
     public Func<object?>? DependsOnGetter { get; init; }
 
-    /// <summary>The settings group instance this property belongs to — usable as a WPF Binding source.</summary>
+    /// <summary>The settings group instance this property belongs to — usable as a binding source.</summary>
     public required object GroupInstance { get; init; }
 
     public required Func<object?> Getter { get; init; }

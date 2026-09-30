@@ -7,12 +7,10 @@ namespace AutoTyper.Desktop;
 /// <summary>
 /// Converts enum values to user-friendly display names by inserting spaces
 /// between PascalCase/camelCase words. For example, "AhkClassic" becomes
-/// "AHK Classic" and "System" remains "System".
+/// "Ahk Classic" and "System" remains "System".
 /// </summary>
 public class EnumDisplayNameConverter : IValueConverter
 {
-    public static readonly EnumDisplayNameConverter Instance = new();
-
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         if (value is null)

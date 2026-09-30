@@ -9,7 +9,7 @@ namespace AutoTyper.Core.Settings;
 /// <see cref="NoticeDelayMaxMs"/> only apply to the full-word case, since a
 /// partial typo is corrected right away.
 /// </summary>
-public class TypoSettings : SettingsGroupBase
+public class TypoSettings : SettingsGroupBase, IValidatableSetting
 {
     private bool _enabled = true;
     private double _probabilityPercent = 4.0;
@@ -54,5 +54,13 @@ public class TypoSettings : SettingsGroupBase
     {
         get => _noticeDelayMaxMs;
         set => SetField(ref _noticeDelayMaxMs, value);
+    }
+
+    public IEnumerable<string> Validate()
+    {
+        if (Enabled && NoticeDelayMinMs > NoticeDelayMaxMs)
+        {
+            yield return "Full-Word Notice Delay Min must not exceed its Max.";
+        }
     }
 }

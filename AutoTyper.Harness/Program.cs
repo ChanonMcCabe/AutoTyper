@@ -8,13 +8,14 @@ using AutoTyper.Core;
 using AutoTyper.Core.Input;
 using AutoTyper.Harness;
 
-var options = new TypingOptions { PassageText = "The quick brown fox jumps over the lazy dog." };
+const string demoPassage = "The quick brown fox jumps over the lazy dog.";
+var options = new TypingOptions();
 options.Speed.Wpm = 200;
 options.Typos.Enabled = true;
 
 if (args.Contains("--real"))
 {
-    await RunAgainstNotepadAsync(options);
+    await RunAgainstNotepadAsync(demoPassage, options);
 }
 else if (args.Contains("--step-away"))
 {
@@ -34,14 +35,15 @@ else if (args.Contains("--diag-timing"))
 }
 else
 {
-    await RunAgainstFakeSenderAsync(options);
+    await RunAgainstFakeSenderAsync(demoPassage, options);
 }
 
 static async Task RunTimingDiagnosticsAsync()
 {
     async Task TimeScenario(string name, Func<CancellationToken, Task> scenario)
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        var cap = TimeSpan.FromSeconds(90);
+        using var cts = new CancellationTokenSource(cap);
         var sw = Stopwatch.StartNew();
         try
         {
@@ -52,7 +54,7 @@ static async Task RunTimingDiagnosticsAsync()
         catch (OperationCanceledException)
         {
             sw.Stop();
-            Console.WriteLine($"{name}: DID NOT FINISH within 20000ms cap (stopped at {sw.ElapsedMilliseconds}ms)");
+            Console.WriteLine($"{name}: DID NOT FINISH within {cap.TotalMilliseconds:F0}ms cap (stopped at {sw.ElapsedMilliseconds}ms)");
         }
     }
 
@@ -105,7 +107,7 @@ static async Task RunTimingDiagnosticsAsync()
     });
 }
 
-static async Task RunAgainstFakeSenderAsync(TypingOptions options)
+static async Task RunAgainstFakeSenderAsync(string passage, TypingOptions options)
 {
     var sender = new FakeKeySender();
     var engine = new TypingEngine(new Random(42));
@@ -114,16 +116,16 @@ static async Task RunAgainstFakeSenderAsync(TypingOptions options)
     Console.WriteLine();
 
     var stopwatch = Stopwatch.StartNew();
-    await engine.RunAsync(options.PassageText, options, sender, CancellationToken.None);
+    await engine.RunAsync(passage, options, sender, CancellationToken.None);
     stopwatch.Stop();
 
     Console.WriteLine();
     Console.WriteLine();
     Console.WriteLine($"Elapsed: {stopwatch.ElapsedMilliseconds} ms");
-    Console.WriteLine($"Final text matches passage: {sender.Result == options.PassageText}");
+    Console.WriteLine($"Final text matches passage: {sender.Result == passage}");
 }
 
-static async Task RunAgainstNotepadAsync(TypingOptions options)
+static async Task RunAgainstNotepadAsync(string passage, TypingOptions options)
 {
     Console.WriteLine("Launching Notepad and typing into it via real SendInput...");
     using var notepad = Process.Start("notepad.exe");
@@ -131,7 +133,7 @@ static async Task RunAgainstNotepadAsync(TypingOptions options)
 
     var sender = new WinInputKeySender();
     var engine = new TypingEngine(new Random(42));
-    await engine.RunAsync(options.PassageText, options, sender, CancellationToken.None);
+    await engine.RunAsync(passage, options, sender, CancellationToken.None);
 
     Console.WriteLine("Done. Check the Notepad window (left open for inspection).");
 }
@@ -156,7 +158,7 @@ static Task RunSpacingAsync()
             window.Activate();
             IntPtr handle = new WindowInteropHelper(window).EnsureHandle();
 
-            var opts = new TypingOptions { PassageText = passage };
+            var opts = new TypingOptions();
             opts.Speed.Wpm = 900;
             opts.Formatting.PreserveSpacing = preserve;
 
@@ -208,7 +210,7 @@ static Task RunStepAwayAgainstNotepadAsync()
 
         IntPtr targetHandle = new WindowInteropHelper(window).EnsureHandle();
 
-        var opts = new TypingOptions { PassageText = passage };
+        var opts = new TypingOptions();
         opts.Speed.Wpm = 600;
         opts.StepAway.Enabled = true;
         opts.StepAway.EveryWords = 3;

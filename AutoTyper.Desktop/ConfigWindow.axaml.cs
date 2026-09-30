@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using FluentAvalonia.UI.Controls;
 using AutoTyper.Core.Settings;
-using System.Text.Json;
 
 namespace AutoTyper.Desktop;
 
@@ -32,7 +31,7 @@ public partial class ConfigWindow : Window
         InitializeComponent();
 
         _liveSettings = liveSettings;
-        _workingCopy = AppSettingsCloner.Clone(liveSettings);
+        _workingCopy = SettingsService.Clone(liveSettings);
 
         AppearanceTab.DataContext = _workingCopy.Preferences;
 
@@ -67,16 +66,6 @@ public partial class ConfigWindow : Window
     }
 
     /// <summary>
-    /// Clones a settings group via JSON serialization to ensure deep copy.
-    /// </summary>
-    private T CloneSettingsGroup<T>(T source) where T : new()
-    {
-        return JsonSerializer.Deserialize<T>(
-            JsonSerializer.Serialize(source, SettingsService.JsonOptions),
-            SettingsService.JsonOptions) ?? new();
-    }
-
-    /// <summary>
     /// Rebinds all settings panels to reflect current working copy values.
     /// </summary>
     private void RebindAllPanels()
@@ -97,29 +86,9 @@ public partial class ConfigWindow : Window
             return;
         }
 
-        var preset = _liveSettings.Presets[PresetComboBox.SelectedIndex - 1];
-        LoadPresetIntoWorkingCopy(preset);
+        _liveSettings.Presets[PresetComboBox.SelectedIndex - 1].ApplyTo(_workingCopy);
+        RebindAllPanels();
         _presetLoaded = true;
-    }
-
-    private void LoadPresetIntoWorkingCopy(TypingPreset preset)
-    {
-        try
-        {
-            _workingCopy.Speed = CloneSettingsGroup(preset.Speed);
-            _workingCopy.Bursts = CloneSettingsGroup(preset.Bursts);
-            _workingCopy.Typos = CloneSettingsGroup(preset.Typos);
-            _workingCopy.Pauses = CloneSettingsGroup(preset.Pauses);
-            _workingCopy.StepAway = CloneSettingsGroup(preset.StepAway);
-            _workingCopy.Formatting = CloneSettingsGroup(preset.Formatting);
-            _workingCopy.Run = CloneSettingsGroup(preset.Run);
-
-            RebindAllPanels();
-        }
-        catch (Exception ex)
-        {
-            ShowError("Failed to load preset", ex.Message);
-        }
     }
 
     private async void SavePresetButton_Click(object? sender, RoutedEventArgs e)
@@ -163,18 +132,7 @@ public partial class ConfigWindow : Window
             return;
         }
 
-        // Create preset from current working copy (deep copied via JSON serialization)
-        var preset = new TypingPreset
-        {
-            Name = name,
-            Speed = CloneSettingsGroup(_workingCopy.Speed),
-            Bursts = CloneSettingsGroup(_workingCopy.Bursts),
-            Typos = CloneSettingsGroup(_workingCopy.Typos),
-            Pauses = CloneSettingsGroup(_workingCopy.Pauses),
-            StepAway = CloneSettingsGroup(_workingCopy.StepAway),
-            Formatting = CloneSettingsGroup(_workingCopy.Formatting),
-            Run = CloneSettingsGroup(_workingCopy.Run),
-        };
+        var preset = TypingPreset.FromSettings(name, _workingCopy);
 
         // Check if a preset with this name already exists and overwrite it
         var existing = _liveSettings.Presets.FirstOrDefault(p => p.Name == name);

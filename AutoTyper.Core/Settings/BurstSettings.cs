@@ -7,7 +7,7 @@ namespace AutoTyper.Core.Settings;
 /// a pre-burst and post-burst pause. Cut from the original AHK MVP, restored
 /// here as an opt-in setting.
 /// </summary>
-public class BurstSettings : SettingsGroupBase
+public class BurstSettings : SettingsGroupBase, IValidatableSetting
 {
     private bool _enabled;
     private double _phraseBurstChancePercent = 8.0;
@@ -97,5 +97,28 @@ public class BurstSettings : SettingsGroupBase
     {
         get => _cooldownMaxMs;
         set => SetField(ref _cooldownMaxMs, value);
+    }
+
+    public IEnumerable<string> Validate()
+    {
+        if (!Enabled)
+        {
+            yield break;
+        }
+
+        if (PreBurstPauseMinMs > PreBurstPauseMaxMs)
+        {
+            yield return "Pre-Burst Pause Min must not exceed its Max.";
+        }
+
+        if (PostBurstPauseMinMs > PostBurstPauseMaxMs)
+        {
+            yield return "Post-Burst Pause Min must not exceed its Max.";
+        }
+
+        if (CooldownMinMs > CooldownMaxMs)
+        {
+            yield return "Cooldown Between Bursts Min must not exceed its Max.";
+        }
     }
 }

@@ -5,7 +5,7 @@ namespace AutoTyper.Desktop;
 /// <summary>
 /// Raw user32.dll P/Invoke surface: SendInput for <see cref="WinInputKeySender"/>
 /// (synthetic Unicode character input and a synthetic VK_BACK press), and
-/// RegisterHotKey/UnregisterHotKey for <see cref="HotkeyManager"/>.
+/// RegisterHotKey/UnregisterHotKey for <see cref="WinHotkeyProvider"/>.
 /// </summary>
 internal static class NativeMethods
 {

@@ -6,13 +6,6 @@
         Icon="avares://AutoTyper.Desktop/Assets/AppIcon.ico">
 
     <Window.Styles>
-        <Style Selector="Border.card">
-            <Setter Property="Padding" Value="12" />
-            <Setter Property="CornerRadius" Value="{DynamicResource OverlayCornerRadius}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-        </Style>
         <Style Selector="TextBlock.secondary">
             <Setter Property="Opacity" Value="0.7" />
         </Style>
@@ -25,7 +18,7 @@
 
                 <Grid Grid.Row="0" Margin="0,0,0,6" ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0" Text="Passage" FontWeight="SemiBold" />
-                    <Button Grid.Column="1" Content="Open…" Padding="8,4" Click="OpenButton_Click"
+                    <Button Grid.Column="1" Content="Open…" Padding="8,4" Command="{Binding LoadPassageCommand}"
                             ToolTip.Tip="Load passage from file" />
                 </Grid>
 
@@ -84,7 +77,7 @@
                     Command="{Binding DeactivateCommand}" />
             <Button Content="Stop Typing" MinWidth="96" Margin="0,0,8,0"
                     Command="{Binding StopTypingCommand}" />
-            <Button x:Name="PauseResumeButton" MinWidth="96"
+            <Button MinWidth="96" Content="{Binding PauseResumeText}"
                     Command="{Binding PauseResumeCommand}" IsVisible="{Binding IsTyping}" />
         </StackPanel>
 

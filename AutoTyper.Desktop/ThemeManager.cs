@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -11,9 +12,7 @@ namespace AutoTyper.Desktop;
 /// <remarks>
 /// Setting <see cref="Application.RequestedThemeVariant"/> propagates to every
 /// open window on its own, and <see cref="ThemeVariant.Default"/> tracks the
-/// OS setting live on both Windows and macOS. That replaces the WPF build's
-/// manual per-window reapplication, its merged-dictionary reload hack, and its
-/// separate system-theme watcher.
+/// OS setting live on both Windows and macOS.
 ///
 /// <see cref="AppTheme.AhkClassic"/> applies a custom set of brush and geometry
 /// resources programmatically, plus flat styles (from AhkClassicTheme.axaml) to
@@ -23,9 +22,9 @@ namespace AutoTyper.Desktop;
 /// </remarks>
 public static class ThemeManager
 {
-    private static bool _ahkClassicThemeApplied = false;
     private static readonly Dictionary<object, object?> _savedResourceValues = [];
-    private static StyleInclude? _ahkClassicStyleInclude = null;
+    private static bool _ahkClassicThemeApplied;
+    private static StyleInclude? _ahkClassicStyleInclude;
 
     public static void Apply(AppTheme theme)
     {
@@ -163,19 +162,16 @@ public static class ThemeManager
         Set("AccentButtonForegroundDisabled", disabledText);
         Set("AccentButtonBorderBrushDisabled", disabledBorder);
 
-        // CheckBox / RadioButton: white box, dark 1px border, blue on hover.
-        foreach (var kind in new[] { "CheckBox", "RadioButton" })
+        // CheckBox: white box, dark 1px border, blue on hover.
+        foreach (var check in new[] { "Unchecked", "Checked", "Indeterminate" })
         {
-            foreach (var check in new[] { "Unchecked", "Checked", "Indeterminate" })
+            foreach (var state in new[] { "", "PointerOver", "Pressed", "Disabled" })
             {
-                foreach (var state in new[] { "", "PointerOver", "Pressed", "Disabled" })
-                {
-                    var disabled = state == "Disabled";
-                    Set($"{kind}Background{check}{state}", disabled ? face : state == "Pressed" ? pressedFace : white);
-                    Set($"{kind}BorderBrush{check}{state}", disabled ? disabledBorder : state == "PointerOver" ? blue : glyphBorder);
-                    Set($"{kind}Foreground{check}{state}", disabled ? disabledText : text);
-                    Set($"{kind}CheckGlyphForeground{check}{state}", disabled ? disabledText : text);
-                }
+                var disabled = state == "Disabled";
+                Set($"CheckBoxBackground{check}{state}", disabled ? face : state == "Pressed" ? pressedFace : white);
+                Set($"CheckBoxBorderBrush{check}{state}", disabled ? disabledBorder : state == "PointerOver" ? blue : glyphBorder);
+                Set($"CheckBoxForeground{check}{state}", disabled ? disabledText : text);
+                Set($"CheckBoxCheckGlyphForeground{check}{state}", disabled ? disabledText : text);
             }
         }
 
@@ -257,7 +253,7 @@ public static class ThemeManager
         Set("TabItemHeaderForegroundPressed", text);
         Set("TabItemHeaderSelectedPipeFill", blue);
 
-        // Flat style overrides (Window font, CheckBox/RadioButton templates, card border) are
+        // Flat style overrides (Window font, CheckBox template, card border) are
         // added after FluentAvalonia's base theme so that they win.
         try
         {
@@ -320,16 +316,13 @@ public static class ThemeManager
     /// <summary>
     /// Saves the current resource value (if it exists) and sets a new one.
     /// </summary>
-    private static void SaveAndSet(dynamic resources, object key, object? value)
+    private static void SaveAndSet(IResourceDictionary resources, object key, object value)
     {
         if (!_savedResourceValues.ContainsKey(key))
         {
-            _savedResourceValues[key] = resources.ContainsKey(key) ? resources[key] : null;
+            _savedResourceValues[key] = resources.TryGetValue(key, out object? existing) ? existing : null;
         }
 
-        if (value is not null)
-        {
-            resources[key] = value;
-        }
+        resources[key] = value;
     }
 }

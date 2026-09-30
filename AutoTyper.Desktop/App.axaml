@@ -6,27 +6,28 @@
 
     <Application.Styles>
         <sty:FluentAvaloniaTheme />
+
+        <!-- Shared "card" panel used by the Main window and the Appearance tab. -->
+        <Style Selector="Border.card">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="CornerRadius" Value="{DynamicResource OverlayCornerRadius}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        </Style>
     </Application.Styles>
 
     <!--
-        Unlike WPF, Avalonia hangs the tray icon off the Application rather than
-        a window. On macOS this becomes a menu-bar status item, which responds to
-        a single click rather than a double click, so the menu is the only
-        interaction wired up here.
+        Avalonia hangs the tray icon off the Application rather than a window.
+        Its menu is built in code (App.BuildTrayMenu) so item enablement can
+        track the main window's state. On macOS this becomes a menu-bar status
+        item.
     -->
     <TrayIcon.Icons>
         <TrayIcons>
             <TrayIcon Icon="avares://AutoTyper.Desktop/Assets/AppIcon.ico"
                       ToolTipText="AutoTyper"
-                      Clicked="TrayIcon_Clicked">
-                <TrayIcon.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="Restore" Click="RestoreMenuItem_Click" />
-                        <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="Exit" Click="ExitMenuItem_Click" />
-                    </NativeMenu>
-                </TrayIcon.Menu>
-            </TrayIcon>
+                      Clicked="TrayIcon_Clicked" />
         </TrayIcons>
     </TrayIcon.Icons>
 

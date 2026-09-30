@@ -20,7 +20,7 @@ namespace AutoTyper.Desktop.Mac;
 /// positions, not the newer <c>NSEvent</c> flags; four-char codes: big-endian
 /// ASCII packed into a <c>uint32</c>) rather than guessed. Struct sizes and
 /// the four-char-code arithmetic itself are covered by
-/// <c>AutoTyper.Core.Tests</c> so a future edit that breaks them fails
+/// <c>AutoTyper.Desktop.Tests</c> so a future edit that breaks them fails
 /// <c>dotnet test</c> rather than surfacing only on a real Mac.
 /// </remarks>
 [SupportedOSPlatform("macos")]

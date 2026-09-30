@@ -237,6 +237,64 @@ public class TypingEngineTests
     }
 
     [Fact]
+    public async Task RunAsync_WithEveryWordInABurst_StillStepsAwayAfterEachBurstThatReachesTheInterval()
+    {
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(15));
+        var options = CreateOptions(wpm: 6000);
+        options.Bursts.Enabled = true;
+        options.Bursts.PhraseBurstChancePercent = 100; // every word lands in a burst
+        options.Bursts.BurstWordCount = 5;
+        options.Bursts.PreBurstPauseMinMs = 0;
+        options.Bursts.PreBurstPauseMaxMs = 0;
+        options.Bursts.PostBurstPauseMinMs = 0;
+        options.Bursts.PostBurstPauseMaxMs = 0;
+        options.Bursts.CooldownMinMs = 0;
+        options.Bursts.CooldownMaxMs = 0;
+        options.StepAway.Enabled = true;
+        options.StepAway.EveryWords = 5;
+        options.StepAway.DurationSeconds = 0;
+        string passage = string.Join(' ', Enumerable.Repeat("word", 20));
+
+        await engine.RunAsync(passage, options, sender, CancellationToken.None);
+
+        Assert.Equal(passage, sender.Result);
+        // Four 5-word bursts, each ending exactly on the interval.
+        Assert.Equal(4, sender.BlurCount);
+        Assert.Equal(4, sender.FocusCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_WithOccasionalBursts_CountsBurstWordsTowardTheStepAwayInterval()
+    {
+        // The settings a user reported step-away "never working" with: 8%
+        // bursts of 5 words and a break every 135 words. Pauses and cooldown
+        // are zeroed only to keep the run fast.
+        var sender = new FakeKeySender();
+        var engine = new TypingEngine(new Random(16));
+        var options = CreateOptions(wpm: 6000);
+        options.Bursts.Enabled = true;
+        options.Bursts.PhraseBurstChancePercent = 8;
+        options.Bursts.BurstWordCount = 5;
+        options.Bursts.PreBurstPauseMinMs = 0;
+        options.Bursts.PreBurstPauseMaxMs = 0;
+        options.Bursts.PostBurstPauseMinMs = 0;
+        options.Bursts.PostBurstPauseMaxMs = 0;
+        options.Bursts.CooldownMinMs = 0;
+        options.Bursts.CooldownMaxMs = 0;
+        options.StepAway.Enabled = true;
+        options.StepAway.EveryWords = 135;
+        options.StepAway.DurationSeconds = 0;
+        string passage = string.Join(' ', Enumerable.Repeat("word", 300));
+
+        await engine.RunAsync(passage, options, sender, CancellationToken.None);
+
+        // 300 words => a break at (or just after a burst spanning) 135 and 270.
+        Assert.Equal(2, sender.BlurCount);
+        Assert.Equal(2, sender.FocusCount);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenCancelledDuringAStepAway_StillRefocusesTheTarget()
     {
         var sender = new FakeKeySender();

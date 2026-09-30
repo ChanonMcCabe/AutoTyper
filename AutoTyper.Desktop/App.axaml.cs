@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -32,12 +31,10 @@ public partial class App : Application
         {
             // Minimising hides the window to the tray, which is not the same as
             // closing it — so the app stays alive while hidden, and genuinely
-            // closing the main window still exits, as it did in the WPF build.
+            // closing the main window still exits.
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             desktop.ShutdownRequested += OnShutdownRequested;
             desktop.MainWindow = new MainWindow();
-
-            // Build the tray menu in code
             BuildTrayMenu();
         }
 
@@ -160,11 +157,6 @@ public partial class App : Application
         (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow as MainWindow;
 
     private void TrayIcon_Clicked(object? sender, EventArgs e) => MainWindow?.RestoreFromTray();
-
-    private void RestoreMenuItem_Click(object? sender, EventArgs e) => MainWindow?.RestoreFromTray();
-
-    private void ExitMenuItem_Click(object? sender, EventArgs e) =>
-        (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Shutdown();
 
     /// <summary>
     /// Persist settings on every shutdown path — closing the window and

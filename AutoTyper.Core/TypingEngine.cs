@@ -151,6 +151,7 @@ public class TypingEngine
                         await typoTyper.TypeWordAsync(burstToken, burstWpm, cancellationToken);
                         await MaybeLongPauseAsync(burstToken, options.Pauses, cancellationToken);
                         RecordWord(burstToken);
+                        stepAwayController.AdvanceWord();
                         pos++;
                         burstWordsRemaining--;
 
@@ -169,30 +170,31 @@ public class TypingEngine
                     burstController.AdvanceCooldown(wordElapsedMs);
                     await MaybeLongPauseAsync(token, options.Pauses, cancellationToken);
                     RecordWord(token);
-
                     stepAwayController.AdvanceWord();
-                    if (stepAwayController.ShouldStepAway())
-                    {
-                        double awayMs = 0;
-                        runController.SetState(RunState.SteppedAway);
-                        try
-                        {
-                            await keySender.BlurTargetAsync();
-                            awayMs = await DelayAsync(TimingService.GetStepAwayDurationMs(options.StepAway, _random), cancellationToken);
-                            stepAways++;
-                        }
-                        finally
-                        {
-                            // Always hand focus back — even if the delay was cancelled,
-                            // the user's window must not be left deactivated.
-                            await keySender.FocusTargetAsync();
-                            runController.SetState(RunState.Typing);
-                        }
+                    pos++;
+                }
 
-                        burstController.AdvanceCooldown(awayMs);
+                // Checked after a whole burst rather than inside it, so a break
+                // that comes due mid-burst waits for the burst to finish.
+                if (stepAwayController.ShouldStepAway())
+                {
+                    double awayMs = 0;
+                    runController.SetState(RunState.SteppedAway);
+                    try
+                    {
+                        await keySender.BlurTargetAsync();
+                        awayMs = await DelayAsync(TimingService.GetStepAwayDurationMs(options.StepAway, _random), cancellationToken);
+                        stepAways++;
+                    }
+                    finally
+                    {
+                        // Always hand focus back — even if the delay was cancelled,
+                        // the user's window must not be left deactivated.
+                        await keySender.FocusTargetAsync();
+                        runController.SetState(RunState.Typing);
                     }
 
-                    pos++;
+                    burstController.AdvanceCooldown(awayMs);
                 }
             }
 

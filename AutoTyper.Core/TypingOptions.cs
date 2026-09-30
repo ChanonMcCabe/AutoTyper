@@ -3,16 +3,15 @@ using AutoTyper.Core.Settings;
 namespace AutoTyper.Core;
 
 /// <summary>
-/// Everything <see cref="TypingEngine"/> needs for a run: the passage text
-/// plus the settings groups that control speed, bursts, typos, pacing,
-/// step-away breaks, and whitespace handling. The hotkey that triggers typing
-/// is a UI/Win32 concern that lives in the App project and isn't part of what
-/// the engine consumes.
+/// Everything <see cref="TypingEngine"/> needs for a run besides the passage
+/// itself (passed to <see cref="TypingEngine.RunAsync"/> directly): the
+/// settings groups that control speed, bursts, typos, pacing, step-away
+/// breaks, whitespace handling, and run behavior. The trigger hotkey is an app
+/// concern (see <see cref="HotkeySettings"/>) and isn't part of what the engine
+/// consumes.
 /// </summary>
 public class TypingOptions
 {
-    public string PassageText { get; set; } = string.Empty;
-
     public SpeedSettings Speed { get; init; } = new();
 
     public BurstSettings Bursts { get; init; } = new();

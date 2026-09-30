@@ -7,8 +7,9 @@ namespace AutoTyper.Core.Settings;
 /// waits roughly <see cref="DurationSeconds"/> seconds — varied by
 /// <see cref="DurationVariancePercent"/> so it isn't a fixed interval — then
 /// re-activates the same window and carries on. The word counter resets after
-/// each break. How focus is actually released is a Win32 concern that lives in
-/// the App project's <c>IKeySender</c> implementation, not the engine.
+/// each break. Every word counts, including those typed in a phrase burst; a
+/// break that comes due mid-burst is taken as soon as the burst ends. How focus is actually released is platform-specific and lives
+/// in the Desktop project's <c>IKeySender</c> implementations, not the engine.
 /// </summary>
 public class StepAwaySettings : SettingsGroupBase
 {

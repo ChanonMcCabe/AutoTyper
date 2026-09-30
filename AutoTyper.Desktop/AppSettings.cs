@@ -4,8 +4,9 @@ using AutoTyper.Core.Settings;
 namespace AutoTyper.Desktop;
 
 /// <summary>
-/// The full persisted state of the main window: every settings group the
-/// typing engine reads plus the trigger hotkey — all as one object graph
+/// The app's full persisted state: every settings group the typing engine
+/// reads, the hotkeys, app-level <see cref="Preferences"/> and the saved
+/// <see cref="Presets"/> — all as one object graph
 /// that <see cref="SettingsSchemaBuilder"/> can walk to drive the settings
 /// panel, and that <see cref="SettingsService"/> serializes as-is. The
 /// passage text is deliberately excluded from persistence (see

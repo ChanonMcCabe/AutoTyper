@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-AutoTyper is a cross-platform (Windows/macOS) desktop utility that types a saved passage into whatever window has focus, simulating human typing: WPM drift, bursts/pauses, typo injection + correction, and periodic "step away." Built with .NET 8 and Avalonia (FluentAvalonia). `AutoTyper_CSharp_Port_Plan.md` documents the original AHK→C# port plan (WPF/single-platform); the app has since moved to Avalonia for cross-platform support, so treat that file as historical context, not current architecture.
+AutoTyper is a cross-platform (Windows/macOS) desktop utility that types a saved passage into whatever window has focus, simulating human typing: WPM drift, bursts/pauses, typo injection + correction, and periodic "step away." Built with .NET 8 and Avalonia (FluentAvalonia). It began as a port of an AutoHotkey script via an earlier WPF build; comments mentioning "the AHK MVP" or "the WPF build" refer to that history, and the WPF-era settings/hotkey parsing is kept deliberately for backward compatibility.
 
 ## Commands
 
@@ -38,7 +38,7 @@ Note the distinction `PlatformServices` draws between `IsSupported` (an adapter 
 
 `TypingEngine.RunAsync` is the orchestrator (`AutoTyper.Core/TypingEngine.cs`): it resolves a base WPM once via `SpeedResolver`, then walks the passage word-by-word, consulting `WpmDriftTracker` for current pace and `BurstController` for whether to run a phrase burst, typing each word through `TypoTyper` (which owns typo injection/correction), with `StepAwayController` periodically triggering a blur/focus cycle via `IKeySender`. `TimingService` computes the actual delay values (letter pause, long pause, burst pauses, step-away duration) that `TypingEngine` awaits between actions. All delays are `Task.Delay(ms, cancellationToken)` — cancellation is checked before every await rather than polled, replacing the original AHK script's `GetKeyState` polling loop.
 
-`TypingOptions` is the root object passed into the engine, composed of the settings-group objects below.
+`TypingOptions` is the root object passed into the engine, composed of the settings-group objects below (the passage itself is a separate `RunAsync` argument). A caller-owned `TypingRunController` handles pause/resume and, when `RunSettings.PauseOnFocusLoss` is on, waits out focus loss on the target (polling `IKeySender.IsTargetFocused`); its state changes and per-token `TypingProgress` snapshots are reported through `IProgress<TypingProgress>`, and a completed run returns a `TypingRunResult` summary.
 
 ### Settings schema (AutoTyper.Core/Settings)
 
@@ -48,7 +48,7 @@ Because the UI is generated from this schema, most new user-facing settings shou
 
 ### Desktop app (AutoTyper.Desktop)
 
-Light hand-rolled MVVM (no framework): `MainViewModel` implements `INotifyPropertyChanged` and exposes `RelayCommand`s, but deliberately keeps native-handle-requiring concerns (hotkey registration, actual key sending, activation) out of the view model — it only raises request events (`ActivateRequested`, `DeactivateRequested`, etc.) that `MainWindow.axaml.cs` code-behind handles, since those need a real window handle and OS calls. `ConfigWindow` hosts the generic `SettingsPanel` (reflection-driven off `SettingsSchemaBuilder`) plus `AppearancePanel`/`ThemeManager` for theme. `AppSettings`/`SettingsService`/`AppSettingsCloner` handle JSON persistence and the save/cancel staged-edit pattern (edits to the Config window are cloned and only committed back on Save).
+Light hand-rolled MVVM (no framework): `MainViewModel` implements `INotifyPropertyChanged` and exposes `RelayCommand`s, but deliberately keeps native-handle-requiring concerns (hotkey registration, actual key sending, activation) out of the view model — it only raises request events (`ActivateRequested`, `DeactivateRequested`, etc.) that `MainWindow.axaml.cs` code-behind handles, since those need a real window handle and OS calls. `ConfigWindow` hosts the generic `SettingsPanel` (reflection-driven off `SettingsSchemaBuilder`) plus `AppearancePanel`/`ThemeManager` for theme. `AppSettings`/`SettingsService` handle JSON persistence and the save/cancel staged-edit pattern: the Config window edits a `SettingsService.Clone` of the live settings and only commits back on Save. `SettingsService.DeepClone<T>` (a JSON round-trip with the on-disk options) is the one deep-copy mechanism — `TypingPreset.FromSettings`/`ApplyTo` use it for named presets of the typing groups (presets exclude hotkeys and appearance). Shared styles such as `Border.card` live in `App.axaml`; the AHK Classic theme is applied by `ThemeManager` as resource overrides plus `AhkClassicTheme.axaml`.
 
 ### Testing conventions
 

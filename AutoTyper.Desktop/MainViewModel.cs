@@ -8,15 +8,15 @@ namespace AutoTyper.Desktop;
 /// Bindable state for the Main window: the passage and WPM fields as staged
 /// (unsaved-until-Save) edits, whether a hotkey/passage are currently
 /// committed, the cross-cutting mode indicator and WPM-field-enabled state
-/// driven by the Config window's Range/Frame toggles, and typing progress —
-/// plus Activate/Deactivate/StopTyping/SaveSettings/CancelSettings commands.
-/// Everything else the user can tune (typos, bursts, pauses, the hotkey
-/// itself, and the Range/Frame mode toggles) lives in the
-/// <see cref="AppSettings"/> object graph edited directly by the Config
-/// window's generic settings panels, not here. Actual hotkey registration
-/// and typing execution are view-layer concerns (they need a native window
-/// handle and Win32 key sending), so this view model only raises request
-/// events for the code-behind to act on.
+/// driven by the Config window's Range/Frame toggles, and run state (typing,
+/// paused, progress, estimate) — plus Activate/Deactivate/StopTyping/
+/// PauseResume/LoadPassage/SaveSettings/CancelSettings commands. Everything
+/// else the user can tune (typos, bursts, pauses, the hotkey itself, and the
+/// Range/Frame mode toggles) lives in the <see cref="AppSettings"/> object
+/// graph edited directly by the Config window's generic settings panels, not
+/// here. Actual hotkey registration, file picking and typing execution are
+/// view-layer concerns (they need a native window handle and OS key sending),
+/// so this view model only raises request events for the code-behind to act on.
 /// </summary>
 public class MainViewModel : INotifyPropertyChanged
 {
@@ -159,8 +159,17 @@ public class MainViewModel : INotifyPropertyChanged
     public bool IsPaused
     {
         get => _isPaused;
-        set => SetField(ref _isPaused, value);
+        set
+        {
+            if (SetField(ref _isPaused, value))
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PauseResumeText)));
+            }
+        }
     }
+
+    /// <summary>Label for the Pause/Resume button, following <see cref="IsPaused"/>.</summary>
+    public string PauseResumeText => IsPaused ? "Resume" : "Pause";
 
     public double ProgressPercent
     {

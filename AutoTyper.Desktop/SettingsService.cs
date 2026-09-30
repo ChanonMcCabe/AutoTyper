@@ -6,8 +6,11 @@ using System.Text.Json.Serialization;
 namespace AutoTyper.Desktop;
 
 /// <summary>
-/// Loads and saves <see cref="AppSettings"/> as JSON in
-/// <c>%AppData%\AutoTyper\settings.json</c>.
+/// Loads and saves <see cref="AppSettings"/> as JSON in an <c>AutoTyper</c>
+/// folder under the user's application-data directory
+/// (<c>%AppData%\AutoTyper\settings.json</c> on Windows,
+/// <c>~/.config/AutoTyper/settings.json</c> on macOS), and provides the
+/// JSON-round-trip deep copy the Config window's staged edits and presets use.
 /// </summary>
 public static class SettingsService
 {
@@ -38,21 +41,7 @@ public static class SettingsService
             }
 
             string json = File.ReadAllText(SettingsPath);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
-
-            // Ensure all settings groups are never null even if JSON contains explicit null or omits the property
-            settings.Preferences ??= new();
-            settings.Speed ??= new();
-            settings.Bursts ??= new();
-            settings.Typos ??= new();
-            settings.Pauses ??= new();
-            settings.StepAway ??= new();
-            settings.Formatting ??= new();
-            settings.Run ??= new();
-            settings.Hotkey ??= new();
-            settings.Presets ??= new();
-
-            return settings;
+            return Normalize(JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings());
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
@@ -91,5 +80,39 @@ public static class SettingsService
 
             throw;
         }
+    }
+
+    /// <summary>
+    /// Deep-copies <paramref name="source"/> via a JSON round-trip with the same
+    /// options used on disk, so a copy behaves exactly like a save-then-load.
+    /// </summary>
+    public static T DeepClone<T>(T source)
+        where T : new() =>
+        JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(source, JsonOptions), JsonOptions) ?? new T();
+
+    /// <summary>
+    /// Deep-copies a whole <see cref="AppSettings"/> graph so the Config window
+    /// can edit a working copy and only apply it on Save — Cancel just discards
+    /// the copy.
+    /// </summary>
+    public static AppSettings Clone(AppSettings source) => Normalize(DeepClone(source));
+
+    /// <summary>
+    /// Replaces any settings group that a hand-edited or older file set to an
+    /// explicit <c>null</c>, so the rest of the app never has to null-check them.
+    /// </summary>
+    private static AppSettings Normalize(AppSettings settings)
+    {
+        settings.Preferences ??= new();
+        settings.Speed ??= new();
+        settings.Bursts ??= new();
+        settings.Typos ??= new();
+        settings.Pauses ??= new();
+        settings.StepAway ??= new();
+        settings.Formatting ??= new();
+        settings.Run ??= new();
+        settings.Hotkey ??= new();
+        settings.Presets ??= new();
+        return settings;
     }
 }

@@ -48,13 +48,8 @@ public partial class MainWindow : Window
             HotkeyCaptureBox.ComboProperty,
             new Binding(nameof(HotkeySettings.Combo)) { Source = _appSettings.Hotkey, Mode = BindingMode.TwoWay });
 
-        // Set up drag-and-drop on the passage TextBox
-        var passageTextBox = this.FindControl<TextBox>("PassageTextBox");
-        if (passageTextBox is not null)
-        {
-            DragDrop.SetAllowDrop(passageTextBox, true);
-            passageTextBox.AddHandler(DragDrop.DropEvent, OnPassageTextBoxDrop);
-        }
+        DragDrop.SetAllowDrop(PassageTextBox, true);
+        PassageTextBox.AddHandler(DragDrop.DropEvent, OnPassageTextBoxDrop);
 
         _appSettings.Hotkey.PropertyChanged += (_, _) => _viewModel.HasHotkey = _appSettings.Hotkey.Combo.HasValue;
         _appSettings.Speed.PropertyChanged += (_, _) =>
@@ -62,7 +57,6 @@ public partial class MainWindow : Window
             UpdateModeIndicator();
             UpdateEstimateText();
         };
-        _appSettings.Pauses.PropertyChanged += (_, _) => UpdateEstimateText();
         _appSettings.StepAway.PropertyChanged += (_, _) => UpdateEstimateText();
         UpdateModeIndicator();
         UpdateEstimateText();
@@ -219,11 +213,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenButton_Click(object? sender, RoutedEventArgs e)
-    {
-        OnLoadPassageRequested(null, EventArgs.Empty);
-    }
-
     private async void SettingsButton_Click(object? sender, RoutedEventArgs e)
     {
         var settingsWindow = new ConfigWindow(_appSettings);
@@ -341,7 +330,6 @@ public partial class MainWindow : Window
 
             controller.Resume();
             _viewModel.IsPaused = false;
-            PauseResumeButton.Content = "Pause";
 
             // Re-register the global Escape hotkey on resume
             try
@@ -357,7 +345,6 @@ public partial class MainWindow : Window
         {
             controller.Pause();
             _viewModel.IsPaused = true;
-            PauseResumeButton.Content = "Resume";
 
             // Unregister the global Escape hotkey while paused
             if (_cancelHotkeyId is int id)
@@ -400,12 +387,20 @@ public partial class MainWindow : Window
             return;
         }
 
+        // The hotkey stays registered after Activate, so the box may have been
+        // cleared since; don't start a run with nothing to type.
+        if (string.IsNullOrWhiteSpace(_viewModel.PassageText))
+        {
+            _viewModel.StatusText = "Nothing to type — enter a passage first.";
+            return;
+        }
+
         // Commit the current passage text to AppSettings
         _appSettings.PassageText = _viewModel.PassageText;
+        string passage = _appSettings.PassageText;
 
         var options = new TypingOptions
         {
-            PassageText = _appSettings.PassageText,
             Speed = _appSettings.Speed,
             Bursts = _appSettings.Bursts,
             Typos = _appSettings.Typos,
@@ -424,12 +419,11 @@ public partial class MainWindow : Window
         _viewModel.ProgressPercent = 0;
         _viewModel.ProgressText = string.Empty;
         _viewModel.StatusText = "Starting...";
-        PauseResumeButton.Content = "Pause";
 
-        _ = RunTypingAsync(options, trigger, fromTray, _typingCts.Token);
+        _ = RunTypingAsync(passage, options, trigger, fromTray, _typingCts.Token);
     }
 
-    private async Task RunTypingAsync(TypingOptions options, HotkeyCombo trigger, bool fromTray, CancellationToken cancellationToken)
+    private async Task RunTypingAsync(string passage, TypingOptions options, HotkeyCombo trigger, bool fromTray, CancellationToken cancellationToken)
     {
         IKeySender keySender = _keySender!;
 
@@ -488,12 +482,13 @@ public partial class MainWindow : Window
                 _cancelHotkeyId = null;
             }
 
-            // Create progress reporter
+            // Constructed here on the UI thread, so Progress<T> posts every
+            // report back to it — OnTypingProgress can touch the view model.
             var progress = new Progress<TypingProgress>(OnTypingProgress);
 
             TypingRunResult result = await Task.Run(
                 () => _typingEngine.RunAsync(
-                    options.PassageText,
+                    passage,
                     options,
                     keySender,
                     cancellationToken,
@@ -538,28 +533,21 @@ public partial class MainWindow : Window
 
     private void OnTypingProgress(TypingProgress progress)
     {
-        // Update UI on the UI thread
-        Dispatcher.UIThread.Post(() =>
+        _viewModel.ProgressPercent = progress.TotalChars > 0
+            ? progress.CharsTyped / (double)progress.TotalChars * 100
+            : 0;
+
+        string stateText = progress.State switch
         {
-            _viewModel.ProgressPercent = (progress.CharsTyped / (double)progress.TotalChars) * 100;
+            RunState.Paused => "Paused",
+            RunState.WaitingForFocus => "waiting for target window focus",
+            RunState.SteppedAway => "on break",
+            _ => string.Empty
+        };
 
-            string stateText = progress.State switch
-            {
-                RunState.Paused => "Paused",
-                RunState.WaitingForFocus => "waiting for target window focus",
-                RunState.SteppedAway => "on break",
-                _ => string.Empty
-            };
-
-            if (string.IsNullOrEmpty(stateText))
-            {
-                _viewModel.ProgressText = $"{(int)_viewModel.ProgressPercent}% · ~{FormatDuration(progress.EstimatedRemaining)} left · {progress.CurrentWpm:F0} WPM";
-            }
-            else
-            {
-                _viewModel.ProgressText = $"{stateText} · {(int)_viewModel.ProgressPercent}%";
-            }
-        });
+        _viewModel.ProgressText = string.IsNullOrEmpty(stateText)
+            ? $"{(int)_viewModel.ProgressPercent}% · ~{FormatDuration(progress.EstimatedRemaining)} left · {progress.CurrentWpm:F0} WPM"
+            : $"{stateText} · {(int)_viewModel.ProgressPercent}%";
     }
 
     private static string FormatRunSummary(TypingRunResult result)

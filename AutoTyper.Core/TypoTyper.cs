@@ -66,20 +66,15 @@ public class TypoTyper
             bool eligible = _typos.Enabled && QwertyNeighbors.ContainsKey(char.ToLowerInvariant(c));
             if (eligible && _random.NextDouble() * 100 < _typos.ProbabilityPercent)
             {
+                TyposMade++;
                 bool fullWord = _random.NextDouble() * 100 < _typos.FullWordTypoRatioPercent;
-                if (fullWord)
-                {
-                    // Backspaces all the way back to this position; the
-                    // retype below is unconditional (no re-rolling the typo
-                    // chance), so this always advances even at a 100% rate.
-                    TyposMade++;
-                    elapsedMs += await TypeFullWordTypoAsync(word, i, wpm, cancellationToken);
-                }
-                else
-                {
-                    TyposMade++;
-                    elapsedMs += await TypePartialTypoAsync(c, wpm, cancellationToken);
-                }
+
+                // Either style backspaces back to this position; the retype
+                // below is unconditional (no re-rolling the typo chance), so
+                // this always advances even at a 100% rate.
+                elapsedMs += fullWord
+                    ? await TypeFullWordTypoAsync(word, i, wpm, cancellationToken)
+                    : await TypePartialTypoAsync(c, wpm, cancellationToken);
             }
 
             elapsedMs += await SendCharWithDelayAsync(c, wpm, cancellationToken);

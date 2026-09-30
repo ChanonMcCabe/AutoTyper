@@ -1,7 +1,6 @@
 using System.Runtime.Versioning;
 using AutoTyper.Core;
 using AutoTyper.Core.Input;
-using AutoTyper.Desktop;
 
 namespace AutoTyper.Desktop.Mac;
 

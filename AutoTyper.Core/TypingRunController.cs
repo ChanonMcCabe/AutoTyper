@@ -72,7 +72,7 @@ public class TypingRunController
         get { lock (_lock) { return _idleStopwatch.Elapsed; } }
     }
 
-    /// <summary>Blocks new runs from starting or resuming until <see cref="Resume"/> is called.</summary>
+    /// <summary>Pauses the run before its next keystroke, until <see cref="Resume"/> is called.</summary>
     public void Pause()
     {
         lock (_lock)

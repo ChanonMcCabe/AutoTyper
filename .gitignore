@@ -3,6 +3,10 @@ bin/
 obj/
 *.user
 publish/
+publish-*/
+TestResults/
+*.coverage
+coverage*.xml
 
 ## Visual Studio
 .vs/
@@ -10,5 +14,12 @@ publish/
 ## Rider
 .idea/
 *.sln.iml
+*.DotSettings.user
 
-.claude
+## OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+## Claude Code — agent briefs in .claude/agents/ are shared; local permissions are not
+.claude/settings.local.json

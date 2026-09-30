@@ -1,8 +1,8 @@
 <!--
     AhkClassic: flat Windows 10 WinForms look (see ThemeManager.ApplyAhkClassicTheme for the palette).
     Buttons, TextBoxes, ComboBoxes, etc. keep FluentAvalonia's templates and are recolored through
-    resource keys; only geometry (thin borders, small padding) is overridden here. CheckBox and
-    RadioButton get small custom templates because WinForms glyphs differ from Fluent's.
+    resource keys; only geometry (thin borders, small padding) is overridden here. CheckBox gets a
+    small custom template because the WinForms glyph differs from Fluent's.
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -110,57 +110,6 @@
     </Style>
     <Style Selector="CheckBox:disabled /template/ TextBlock#CheckGlyph">
         <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundCheckedDisabled}" />
-    </Style>
-
-    <!-- ========== RadioButton ========== -->
-    <Style Selector="RadioButton">
-        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUnchecked}" />
-        <Setter Property="Foreground" Value="{DynamicResource RadioButtonForegroundUnchecked}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUnchecked}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="4,2" />
-        <Setter Property="Template">
-            <ControlTemplate>
-                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                    <Grid ColumnDefinitions="Auto,*">
-                        <Grid Width="13" Height="13" Margin="0,0,6,0" VerticalAlignment="Center">
-                            <Ellipse x:Name="OuterEllipse"
-                                     Fill="{TemplateBinding Background}"
-                                     Stroke="{TemplateBinding BorderBrush}"
-                                     StrokeThickness="1" />
-                            <Ellipse x:Name="CheckGlyph" Width="5" Height="5"
-                                     Fill="{DynamicResource RadioButtonCheckGlyphForegroundChecked}"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                     IsVisible="False" />
-                        </Grid>
-                        <ContentPresenter Grid.Column="1"
-                                          Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          Foreground="{TemplateBinding Foreground}"
-                                          RecognizesAccessKey="True"
-                                          VerticalAlignment="Center" />
-                    </Grid>
-                </Border>
-            </ControlTemplate>
-        </Setter>
-    </Style>
-
-    <Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
-        <Setter Property="IsVisible" Value="True" />
-    </Style>
-    <Style Selector="RadioButton:pointerover">
-        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUncheckedPointerOver}" />
-    </Style>
-    <Style Selector="RadioButton:pressed">
-        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUncheckedPressed}" />
-    </Style>
-    <Style Selector="RadioButton:disabled">
-        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUncheckedDisabled}" />
-        <Setter Property="Foreground" Value="{DynamicResource RadioButtonForegroundUncheckedDisabled}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUncheckedDisabled}" />
-    </Style>
-    <Style Selector="RadioButton:disabled /template/ Ellipse#CheckGlyph">
-        <Setter Property="Fill" Value="{DynamicResource RadioButtonCheckGlyphForegroundCheckedDisabled}" />
     </Style>
 
 </Styles>
