@@ -26,7 +26,12 @@ A desktop utility that types text like a human would — with natural pacing, dr
 
 ## Install
 
-There isn't a pre-built download yet. Build it from source (see below).
+Download the latest build for your platform from the [Releases page](https://github.com/ChanonMcCabe/AutoTyper/releases/latest) — no .NET install needed.
+
+- **Windows**: unzip `AutoTyper-win-x64.zip` and run `AutoTyper.Desktop.exe`. The exe is unsigned, so SmartScreen may warn: click **More info → Run anyway**.
+- **macOS**: unzip `AutoTyper-osx-arm64.zip` (Apple Silicon) or `AutoTyper-osx-x64.zip` (Intel) and move `AutoTyper.app` to Applications. The app isn't notarized, so on first launch right-click it and choose **Open**, then grant Accessibility access when prompted.
+
+Or build it from source (see below).
 
 ## Usage
 

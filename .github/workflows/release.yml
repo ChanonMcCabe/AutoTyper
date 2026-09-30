@@ -1,0 +1,67 @@
+name: Release
+
+# Builds Windows and macOS downloads and attaches them to a GitHub Release
+# whenever a version tag (e.g. v0.1.0) is pushed.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish
+        run: >
+          dotnet publish AutoTyper.Desktop -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -o ./publish-win-x64
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path ./publish-win-x64/* -DestinationPath AutoTyper-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutoTyper-win-x64
+          path: AutoTyper-win-x64.zip
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        rid: [osx-arm64, osx-x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish
+        run: dotnet publish AutoTyper.Desktop -c Release -r ${{ matrix.rid }} --self-contained -o ./publish-${{ matrix.rid }}
+      - name: Build .app bundle
+        # No .iconset in the repo yet, so the script skips the icon (generic icon is used).
+        run: |
+          chmod +x AutoTyper.Desktop/Packaging/finish-macos-build.sh
+          AutoTyper.Desktop/Packaging/finish-macos-build.sh ./publish-${{ matrix.rid }} none
+          mv ./publish-${{ matrix.rid }}/AutoTyper.zip AutoTyper-${{ matrix.rid }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AutoTyper-${{ matrix.rid }}
+          path: AutoTyper-${{ matrix.rid }}.zip
+
+  release:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
