@@ -1,175 +1,87 @@
+<!--
+    AhkClassic: flat Windows 10 WinForms look (see ThemeManager.ApplyAhkClassicTheme for the palette).
+    Buttons, TextBoxes, ComboBoxes, etc. keep FluentAvalonia's templates and are recolored through
+    resource keys; only geometry (thin borders, small padding) is overridden here. CheckBox and
+    RadioButton get small custom templates because WinForms glyphs differ from Fluent's.
+-->
 <Styles xmlns="https://github.com/avaloniaui"
-         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Segoe UI 9pt (12px). Avalonia falls back to the default font family where Segoe UI is absent (macOS). -->
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Background" Value="{DynamicResource ApplicationPageBackgroundThemeBrush}" />
+    </Style>
 
     <Style Selector="TextBox">
-        <Setter Property="Background" Value="{DynamicResource TextControlBackground}" />
-        <Setter Property="Foreground" Value="{DynamicResource TextControlForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
-        <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="Padding" Value="2" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="3,2" />
+        <Setter Property="MinHeight" Value="23" />
         <Setter Property="CornerRadius" Value="0" />
     </Style>
 
-    <!-- TextBox template with 3D beveled effect (sunken appearance) -->
-    <Style Selector="TextBox">
-        <Setter Property="Template">
-            <ControlTemplate>
-                <!-- Outer border: dark top/left (shadow) -->
-                <Border BorderBrush="#808080" BorderThickness="1,1,0,0" CornerRadius="0">
-                    <!-- Inner border: light bottom/right (highlight) -->
-                    <Border BorderBrush="#FFFFFF" BorderThickness="0,0,1,1" CornerRadius="0"
-                            Background="{TemplateBinding Background}">
-                        <!-- Text input area (wrapped in border for padding) -->
-                        <Border Padding="{TemplateBinding Padding}">
-                            <TextPresenter x:Name="PART_TextPresenter"
-                                           Text="{TemplateBinding Text}"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Stretch" />
-                        </Border>
-                    </Border>
-                </Border>
-            </ControlTemplate>
-        </Setter>
-    </Style>
-
-    <!-- TextBox PointerOver state -->
-    <Style Selector="TextBox:pointerover">
-        <Setter Property="Background" Value="{DynamicResource TextControlBackgroundPointerOver}" />
-    </Style>
-
-    <!-- TextBox Focused state -->
-    <Style Selector="TextBox:focus">
-        <Setter Property="Background" Value="{DynamicResource TextControlBackgroundFocused}" />
-    </Style>
-
-    <!-- TextBox Disabled state -->
-    <Style Selector="TextBox:disabled">
-        <Setter Property="Background" Value="{DynamicResource TextControlBackgroundDisabled}" />
-        <Setter Property="Foreground" Value="{DynamicResource TextControlForegroundDisabled}" />
-    </Style>
-
-    <!-- 3D Beveled Button: raised with light top/left borders, becomes sunken when pressed -->
     <Style Selector="Button">
-        <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
-        <Setter Property="Foreground" Value="{DynamicResource ButtonForeground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
-        <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,3" />
+        <Setter Property="MinHeight" Value="23" />
         <Setter Property="CornerRadius" Value="0" />
     </Style>
 
-    <!-- Button template with 3D effect -->
-    <Style Selector="Button">
-        <Setter Property="Template">
-            <ControlTemplate>
-                <!-- Raised state: light top/left, dark bottom/right -->
-                <Border x:Name="PART_Border"
-                        BorderBrush="#C0C0C0"
-                        BorderThickness="1,1,0,0"
-                        CornerRadius="0"
-                        Background="{TemplateBinding Background}">
-                    <Border BorderBrush="#808080" BorderThickness="0,0,1,1" CornerRadius="0">
-                        <ContentPresenter x:Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          Foreground="{TemplateBinding Foreground}"
-                                          Padding="{TemplateBinding Padding}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center" />
-                    </Border>
-                </Border>
-            </ControlTemplate>
-        </Setter>
+    <Style Selector="ComboBox">
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="MinHeight" Value="23" />
+        <Setter Property="CornerRadius" Value="0" />
     </Style>
 
-    <!-- Button PointerOver state: slightly darker raised appearance -->
-    <Style Selector="Button:pointerover">
-        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
+    <!-- Tab headers: Fluent's are 28px; WinForms tabs use the normal dialog font. -->
+    <Style Selector="TabItem">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,3" />
+        <Setter Property="MinHeight" Value="22" />
     </Style>
 
-    <!-- Button Pressed state: inverted to sunken (dark top/left, light bottom/right) -->
-    <Style Selector="Button:pressed /template/ Border#PART_Border">
-        <Setter Property="BorderBrush" Value="#808080" />
-        <Setter Property="BorderThickness" Value="1,1,0,0" />
+    <!-- Group box: flat square card with a 1px light border. -->
+    <Style Selector="Border.card">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="BorderThickness" Value="1" />
     </Style>
 
-    <Style Selector="Button:pressed /template/ Border#PART_Border > Border">
-        <Setter Property="BorderBrush" Value="#FFFFFF" />
-        <Setter Property="BorderThickness" Value="0,0,1,1" />
-    </Style>
-
-    <Style Selector="Button:pressed">
-        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPressed}" />
-        <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundPressed}" />
-    </Style>
-
-    <!-- Button Disabled state -->
-    <Style Selector="Button:disabled">
-        <Setter Property="Background" Value="{DynamicResource ButtonBackgroundDisabled}" />
-        <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundDisabled}" />
-    </Style>
-
-    <!-- Custom CheckBox with corrected glyph centering and 3D box appearance -->
+    <!-- ========== CheckBox ========== -->
     <Style Selector="CheckBox">
         <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUnchecked}" />
         <Setter Property="Foreground" Value="{DynamicResource CheckBoxForegroundUnchecked}" />
         <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushUnchecked}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="8,4" />
-        <Setter Property="CornerRadius" Value="0" />
-    </Style>
-
-    <!-- CheckBox template -->
-    <Style Selector="CheckBox">
+        <Setter Property="Padding" Value="4,2" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Padding="{TemplateBinding Padding}">
-                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
-                        <!-- CheckBox box with 3D effect -->
-                        <Border Grid.Column="0"
-                                Width="14"
-                                Height="14"
-                                Margin="0,0,8,0"
-                                BorderBrush="#808080"
-                                BorderThickness="1,1,0,0"
-                                CornerRadius="0"
-                                VerticalAlignment="Center">
-                            <Border BorderBrush="#FFFFFF" BorderThickness="0,0,1,1">
-                                <Border x:Name="PART_CheckBoxBox"
-                                        Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="0">
-                                    <!-- Grid to hold both glyph variants (only one visible at a time) -->
-                                    <Grid>
-                                        <!-- Checkmark glyph (only visible when checked) -->
-                                        <TextBlock x:Name="CheckGlyph"
-                                                   Text="✓"
-                                                   Foreground="{DynamicResource CheckBoxCheckGlyphForegroundUnchecked}"
-                                                   FontSize="12"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   IsVisible="False" />
-
-                                        <!-- Indeterminate glyph (only visible when indeterminate) -->
-                                        <TextBlock x:Name="IndeterminateGlyph"
-                                                   Text="▪"
-                                                   Foreground="{DynamicResource CheckBoxCheckGlyphForegroundIndeterminate}"
-                                                   FontSize="12"
-                                                   FontWeight="Bold"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   IsVisible="False" />
-                                    </Grid>
-                                </Border>
-                            </Border>
+                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Border x:Name="PART_Box"
+                                Width="13" Height="13"
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <TextBlock x:Name="CheckGlyph" Text="✓" FontSize="11" FontWeight="Bold"
+                                           Foreground="{DynamicResource CheckBoxCheckGlyphForegroundChecked}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="False" />
+                                <Border x:Name="IndeterminateGlyph" Width="7" Height="7"
+                                        Background="{DynamicResource CheckBoxCheckGlyphForegroundIndeterminate}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        IsVisible="False" />
+                            </Grid>
                         </Border>
-
-                        <!-- Label text -->
                         <ContentPresenter Grid.Column="1"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
                                           Foreground="{TemplateBinding Foreground}"
+                                          RecognizesAccessKey="True"
                                           VerticalAlignment="Center" />
                     </Grid>
                 </Border>
@@ -177,91 +89,78 @@
         </Setter>
     </Style>
 
-    <!-- CheckBox Unchecked states -->
-    <Style Selector="CheckBox:unchecked">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUnchecked}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushUnchecked}" />
-    </Style>
-
-    <Style Selector="CheckBox:unchecked:pointerover">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUncheckedPointerOver}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushUncheckedPointerOver}" />
-    </Style>
-
-    <!-- Hide glyphs when unchecked -->
-    <Style Selector="CheckBox:unchecked /template/ TextBlock#CheckGlyph">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
-
-    <Style Selector="CheckBox:unchecked /template/ TextBlock#IndeterminateGlyph">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
-
-    <!-- CheckBox Checked states -->
-    <Style Selector="CheckBox:checked">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundChecked}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushChecked}" />
-    </Style>
-
-    <!-- Show checkmark glyph when checked -->
     <Style Selector="CheckBox:checked /template/ TextBlock#CheckGlyph">
         <Setter Property="IsVisible" Value="True" />
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundChecked}" />
     </Style>
-
-    <!-- Hide indeterminate glyph when checked -->
-    <Style Selector="CheckBox:checked /template/ TextBlock#IndeterminateGlyph">
-        <Setter Property="IsVisible" Value="False" />
-    </Style>
-
-    <Style Selector="CheckBox:checked:pointerover">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundCheckedPointerOver}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushCheckedPointerOver}" />
-    </Style>
-
-    <Style Selector="CheckBox:checked:pointerover /template/ TextBlock#CheckGlyph">
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundCheckedPointerOver}" />
-    </Style>
-
-    <Style Selector="CheckBox:checked:pressed /template/ TextBlock#CheckGlyph">
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundCheckedPressed}" />
-    </Style>
-
-    <!-- CheckBox Indeterminate states -->
-    <Style Selector="CheckBox:indeterminate">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundIndeterminate}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushIndeterminate}" />
-    </Style>
-
-    <!-- Show indeterminate glyph when indeterminate -->
-    <Style Selector="CheckBox:indeterminate /template/ TextBlock#IndeterminateGlyph">
+    <Style Selector="CheckBox:indeterminate /template/ Border#IndeterminateGlyph">
         <Setter Property="IsVisible" Value="True" />
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundIndeterminate}" />
     </Style>
 
-    <!-- Hide checkmark glyph when indeterminate -->
-    <Style Selector="CheckBox:indeterminate /template/ TextBlock#CheckGlyph">
-        <Setter Property="IsVisible" Value="False" />
+    <Style Selector="CheckBox:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushUncheckedPointerOver}" />
+        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUncheckedPointerOver}" />
     </Style>
-
-    <Style Selector="CheckBox:indeterminate:pointerover">
-        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundIndeterminatePointerOver}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushIndeterminatePointerOver}" />
+    <Style Selector="CheckBox:pressed">
+        <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUncheckedPressed}" />
     </Style>
-
-    <Style Selector="CheckBox:indeterminate:pointerover /template/ TextBlock#IndeterminateGlyph">
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundIndeterminatePointerOver}" />
-    </Style>
-
-    <Style Selector="CheckBox:indeterminate:pressed /template/ TextBlock#IndeterminateGlyph">
-        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundIndeterminatePressed}" />
-    </Style>
-
-    <!-- CheckBox Disabled state -->
     <Style Selector="CheckBox:disabled">
         <Setter Property="Background" Value="{DynamicResource CheckBoxBackgroundUncheckedDisabled}" />
         <Setter Property="Foreground" Value="{DynamicResource CheckBoxForegroundUncheckedDisabled}" />
         <Setter Property="BorderBrush" Value="{DynamicResource CheckBoxBorderBrushUncheckedDisabled}" />
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ TextBlock#CheckGlyph">
+        <Setter Property="Foreground" Value="{DynamicResource CheckBoxCheckGlyphForegroundCheckedDisabled}" />
+    </Style>
+
+    <!-- ========== RadioButton ========== -->
+    <Style Selector="RadioButton">
+        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUnchecked}" />
+        <Setter Property="Foreground" Value="{DynamicResource RadioButtonForegroundUnchecked}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUnchecked}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Grid Width="13" Height="13" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <Ellipse x:Name="OuterEllipse"
+                                     Fill="{TemplateBinding Background}"
+                                     Stroke="{TemplateBinding BorderBrush}"
+                                     StrokeThickness="1" />
+                            <Ellipse x:Name="CheckGlyph" Width="5" Height="5"
+                                     Fill="{DynamicResource RadioButtonCheckGlyphForegroundChecked}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     IsVisible="False" />
+                        </Grid>
+                        <ContentPresenter Grid.Column="1"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          RecognizesAccessKey="True"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="RadioButton:checked /template/ Ellipse#CheckGlyph">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="RadioButton:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUncheckedPointerOver}" />
+    </Style>
+    <Style Selector="RadioButton:pressed">
+        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUncheckedPressed}" />
+    </Style>
+    <Style Selector="RadioButton:disabled">
+        <Setter Property="Background" Value="{DynamicResource RadioButtonBackgroundUncheckedDisabled}" />
+        <Setter Property="Foreground" Value="{DynamicResource RadioButtonForegroundUncheckedDisabled}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource RadioButtonBorderBrushUncheckedDisabled}" />
+    </Style>
+    <Style Selector="RadioButton:disabled /template/ Ellipse#CheckGlyph">
+        <Setter Property="Fill" Value="{DynamicResource RadioButtonCheckGlyphForegroundCheckedDisabled}" />
     </Style>
 
 </Styles>

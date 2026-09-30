@@ -16,10 +16,10 @@ namespace AutoTyper.Desktop;
 /// separate system-theme watcher.
 ///
 /// <see cref="AppTheme.AhkClassic"/> applies a custom set of brush and geometry
-/// resources programmatically, plus custom ControlThemes (from AhkClassicTheme.axaml)
-/// to achieve a 3D-beveled classic Windows 95/98 dialog look (sunken TextBox inputs,
-/// raised Buttons, properly centered CheckBox glyphs). Switching to another theme
-/// reverts these overrides and removes the custom ControlThemes.
+/// resources programmatically, plus flat styles (from AhkClassicTheme.axaml) to
+/// achieve a Windows 10 WinForms dialog look (flat #F0F0F0 surface, white inset
+/// TextBoxes, flat gray Buttons with blue hover, square group boxes, Segoe UI 9pt).
+/// Switching to another theme reverts these overrides and removes the styles.
 /// </remarks>
 public static class ThemeManager
 {
@@ -62,272 +62,203 @@ public static class ThemeManager
             return;
         }
 
-        var resources = Application.Current.Resources;
+        var r = Application.Current.Resources;
 
-        // Square corners (classic Windows dialog look).
-        SaveAndSet(resources, "ControlCornerRadius", new CornerRadius(0));
-        SaveAndSet(resources, "OverlayCornerRadius", new CornerRadius(0));
+        static SolidColorBrush B(string hex) => new(Color.Parse(hex));
+        void Set(string key, object value) => SaveAndSet(r, key, value);
 
-        // Palette: classic Windows/AutoHotkey colors.
-        var controlFace = new SolidColorBrush(Color.Parse("#C0C0C0"));
-        var backgroundColor = new SolidColorBrush(Color.Parse("#D4D4D4"));
-        var borderColor = new SolidColorBrush(Color.Parse("#808080"));
-        var whiteBrush = new SolidColorBrush(Colors.White);
-        var blackText = new SolidColorBrush(Color.Parse("#000000"));
-        var secondaryText = new SolidColorBrush(Color.Parse("#333333"));
-        var tertiaryText = new SolidColorBrush(Color.Parse("#666666"));
-        var hoverColor = new SolidColorBrush(Color.Parse("#A9A9A9"));
-        var pressedColor = new SolidColorBrush(Color.Parse("#707070"));
-        var disabledLightBg = new SolidColorBrush(Color.Parse("#D0D0D0"));
-        var disabledText = new SolidColorBrush(Color.Parse("#888888"));
+        // Square corners (WinForms controls have none).
+        Set("ControlCornerRadius", new CornerRadius(0));
+        Set("OverlayCornerRadius", new CornerRadius(0));
 
-        // Window/application background.
-        SaveAndSet(resources, "ApplicationPageBackgroundThemeBrush", backgroundColor);
+        // Windows 10 WinForms palette.
+        var face = B("#F0F0F0");          // window / group box
+        var groupBorder = B("#DCDCDC");
+        var buttonFace = B("#E1E1E1");
+        var buttonBorder = B("#ADADAD");
+        var hoverFace = B("#E5F1FB");
+        var pressedFace = B("#CCE4F7");
+        var blue = B("#0078D7");
+        var darkBlue = B("#005499");
+        var white = B("#FFFFFF");
+        var inputBorder = B("#7A7A7A");
+        var glyphBorder = B("#333333");
+        var text = B("#000000");
+        var secondaryText = B("#333333");
+        var disabledText = B("#6D6D6D");
+        var disabledFace = B("#CCCCCC");
+        var disabledBorder = B("#BFBFBF");
 
-        // Card and panel backgrounds (reuse existing generic keys).
-        SaveAndSet(resources, "CardBackgroundFillColorDefaultBrush", controlFace);
-        SaveAndSet(resources, "CardBackgroundFillColorSecondaryBrush", controlFace);
-        SaveAndSet(resources, "ControlFillColorDefaultBrush", controlFace);
-        SaveAndSet(resources, "ControlFillColorSecondaryBrush", controlFace);
-        SaveAndSet(resources, "ControlFillColorTertiaryBrush", controlFace);
-        SaveAndSet(resources, "ControlAltFillColorSecondaryBrush", controlFace);
+        Set("ApplicationPageBackgroundThemeBrush", face);
+        Set("SolidBackgroundFillColorBaseBrush", face);
 
-        // Borders: thin gray lines.
-        SaveAndSet(resources, "ControlStrokeColorDefaultBrush", borderColor);
-        SaveAndSet(resources, "ControlStrokeColorSecondaryBrush", new SolidColorBrush(Color.Parse("#999999")));
-        SaveAndSet(resources, "CardStrokeColorDefaultBrush", borderColor);
-        SaveAndSet(resources, "DividerStrokeColorDefaultBrush", new SolidColorBrush(Color.Parse("#999999")));
+        // Cards become flat group boxes.
+        Set("CardBackgroundFillColorDefaultBrush", face);
+        Set("CardBackgroundFillColorSecondaryBrush", face);
+        Set("CardStrokeColorDefaultBrush", groupBorder);
+        Set("ControlStrokeColorDefaultBrush", groupBorder);
+        Set("ControlStrokeColorSecondaryBrush", groupBorder);
+        Set("DividerStrokeColorDefaultBrush", groupBorder);
+        Set("ControlFillColorDefaultBrush", buttonFace);
+        Set("ControlFillColorSecondaryBrush", buttonFace);
+        Set("ControlFillColorTertiaryBrush", pressedFace);
+        Set("ControlAltFillColorSecondaryBrush", face);
 
-        // Text/foreground (generic).
-        SaveAndSet(resources, "TextFillColorPrimaryBrush", blackText);
-        SaveAndSet(resources, "TextFillColorSecondaryBrush", secondaryText);
-        SaveAndSet(resources, "TextFillColorTertiaryBrush", tertiaryText);
+        Set("TextFillColorPrimaryBrush", text);
+        Set("TextFillColorSecondaryBrush", secondaryText);
+        Set("TextFillColorTertiaryBrush", disabledText);
+        Set("TextFillColorDisabledBrush", disabledText);
 
-        // Accent color (gray, not blue).
-        SaveAndSet(resources, "SystemAccentColor", Color.Parse("#999999"));
-        SaveAndSet(resources, "AccentFillColorDefaultBrush", borderColor);
-        SaveAndSet(resources, "AccentButtonBackground", new SolidColorBrush(Color.Parse("#999999")));
+        Set("SystemAccentColor", Color.Parse("#0078D7"));
+        Set("AccentFillColorDefaultBrush", blue);
+        Set("AccentFillColorSecondaryBrush", blue);
+        Set("AccentFillColorTertiaryBrush", darkBlue);
 
-        // ========== TextBox ==========
-        // Base state.
-        SaveAndSet(resources, "TextControlBackground", whiteBrush);
-        SaveAndSet(resources, "TextControlForeground", blackText);
-        SaveAndSet(resources, "TextControlBorderBrush", borderColor);
-        SaveAndSet(resources, "TextControlPlaceholderForeground", tertiaryText);
+        // Font family and size come from the Window style in AhkClassicTheme.axaml.
+        Set("ControlContentThemeFontSize", 12.0);
 
-        // Pointer over.
-        SaveAndSet(resources, "TextControlBackgroundPointerOver", whiteBrush);
-        SaveAndSet(resources, "TextControlForegroundPointerOver", blackText);
-        SaveAndSet(resources, "TextControlBorderBrushPointerOver", borderColor);
-        SaveAndSet(resources, "TextControlPlaceholderForegroundPointerOver", tertiaryText);
+        // TextBox: white, 1px gray border, blue on hover/focus.
+        Set("TextControlThemeMinHeight", 23.0);
+        Set("TextControlBorderThemeThickness", new Thickness(1));
+        Set("TextControlBorderThemeThicknessFocused", new Thickness(1));
+        foreach (var state in new[] { "", "PointerOver", "Focused" })
+        {
+            Set("TextControlBackground" + state, white);
+            Set("TextControlForeground" + state, text);
+            Set("TextControlPlaceholderForeground" + state, disabledText);
+        }
+        Set("TextControlBorderBrush", inputBorder);
+        Set("TextControlBorderBrushPointerOver", blue);
+        Set("TextControlBorderBrushFocused", blue);
+        Set("TextControlBackgroundDisabled", face);
+        Set("TextControlForegroundDisabled", disabledText);
+        Set("TextControlBorderBrushDisabled", disabledBorder);
+        Set("TextControlPlaceholderForegroundDisabled", disabledText);
 
-        // Focused (black border for classic sunken-focus look).
-        SaveAndSet(resources, "TextControlBackgroundFocused", whiteBrush);
-        SaveAndSet(resources, "TextControlForegroundFocused", blackText);
-        SaveAndSet(resources, "TextControlBorderBrushFocused", new SolidColorBrush(Color.Parse("#000000")));
-        SaveAndSet(resources, "TextControlPlaceholderForegroundFocused", tertiaryText);
+        // Button: flat #E1E1E1, blue hover/press.
+        Set("ButtonBackground", buttonFace);
+        Set("ButtonForeground", text);
+        Set("ButtonBorderBrush", buttonBorder);
+        Set("ButtonBackgroundPointerOver", hoverFace);
+        Set("ButtonForegroundPointerOver", text);
+        Set("ButtonBorderBrushPointerOver", blue);
+        Set("ButtonBackgroundPressed", pressedFace);
+        Set("ButtonForegroundPressed", text);
+        Set("ButtonBorderBrushPressed", darkBlue);
+        Set("ButtonBackgroundDisabled", face);
+        Set("ButtonForegroundDisabled", disabledText);
+        Set("ButtonBorderBrushDisabled", disabledBorder);
 
-        // Disabled.
-        SaveAndSet(resources, "TextControlBackgroundDisabled", disabledLightBg);
-        SaveAndSet(resources, "TextControlForegroundDisabled", disabledText);
-        SaveAndSet(resources, "TextControlBorderBrushDisabled", new SolidColorBrush(Color.Parse("#999999")));
-        SaveAndSet(resources, "TextControlPlaceholderForegroundDisabled", new SolidColorBrush(Color.Parse("#999999")));
+        // Accent (default) button: same flat face, blue border like a WinForms AcceptButton.
+        Set("AccentButtonBackground", buttonFace);
+        Set("AccentButtonForeground", text);
+        Set("AccentButtonBorderBrush", blue);
+        Set("AccentButtonBackgroundPointerOver", hoverFace);
+        Set("AccentButtonForegroundPointerOver", text);
+        Set("AccentButtonBorderBrushPointerOver", blue);
+        Set("AccentButtonBackgroundPressed", pressedFace);
+        Set("AccentButtonForegroundPressed", text);
+        Set("AccentButtonBorderBrushPressed", darkBlue);
+        Set("AccentButtonBackgroundDisabled", face);
+        Set("AccentButtonForegroundDisabled", disabledText);
+        Set("AccentButtonBorderBrushDisabled", disabledBorder);
 
-        // ========== Button ==========
-        // Base state.
-        SaveAndSet(resources, "ButtonBackground", controlFace);
-        SaveAndSet(resources, "ButtonForeground", blackText);
-        SaveAndSet(resources, "ButtonBorderBrush", borderColor);
+        // CheckBox / RadioButton: white box, dark 1px border, blue on hover.
+        foreach (var kind in new[] { "CheckBox", "RadioButton" })
+        {
+            foreach (var check in new[] { "Unchecked", "Checked", "Indeterminate" })
+            {
+                foreach (var state in new[] { "", "PointerOver", "Pressed", "Disabled" })
+                {
+                    var disabled = state == "Disabled";
+                    Set($"{kind}Background{check}{state}", disabled ? face : state == "Pressed" ? pressedFace : white);
+                    Set($"{kind}BorderBrush{check}{state}", disabled ? disabledBorder : state == "PointerOver" ? blue : glyphBorder);
+                    Set($"{kind}Foreground{check}{state}", disabled ? disabledText : text);
+                    Set($"{kind}CheckGlyphForeground{check}{state}", disabled ? disabledText : text);
+                }
+            }
+        }
 
-        // Pointer over.
-        SaveAndSet(resources, "ButtonBackgroundPointerOver", hoverColor);
-        SaveAndSet(resources, "ButtonForegroundPointerOver", blackText);
-        SaveAndSet(resources, "ButtonBorderBrushPointerOver", borderColor);
+        // ToggleSwitch: flat track; dark knob when off, blue track when on.
+        foreach (var state in new[] { "", "PointerOver", "Pressed", "Disabled" })
+        {
+            var disabled = state == "Disabled";
+            Set("ToggleSwitchContainerBackground" + state, B("#00FFFFFF"));
+            Set("ToggleSwitchFillOff" + state, disabled ? face : white);
+            Set("ToggleSwitchFillOn" + state, disabled ? disabledFace : blue);
+            Set("ToggleSwitchStrokeOff" + state, disabled ? disabledBorder : glyphBorder);
+            Set("ToggleSwitchStrokeOn" + state, disabled ? disabledBorder : blue);
+            Set("ToggleSwitchKnobFillOff" + state, disabled ? disabledText : glyphBorder);
+            Set("ToggleSwitchKnobFillOn" + state, disabled ? disabledText : white);
+        }
+        Set("ToggleSwitchContentForeground", text);
+        Set("ToggleSwitchHeaderForeground", text);
 
-        // Pressed.
-        SaveAndSet(resources, "ButtonBackgroundPressed", pressedColor);
-        SaveAndSet(resources, "ButtonForegroundPressed", whiteBrush);
-        SaveAndSet(resources, "ButtonBorderBrushPressed", borderColor);
+        // ComboBox: white box, 1px border; popup items highlight in blue.
+        foreach (var state in new[] { "", "PointerOver", "Pressed", "Focused", "FocusedPointerOver" })
+        {
+            Set("ComboBoxBackground" + state, white);
+            Set("ComboBoxForeground" + state, text);
+        }
+        Set("ComboBoxBorderBrush", inputBorder);
+        Set("ComboBoxBorderBrushPointerOver", blue);
+        Set("ComboBoxBorderBrushPressed", blue);
+        Set("ComboBoxBorderBrushFocused", blue);
+        Set("ComboBoxBackgroundDisabled", face);
+        Set("ComboBoxForegroundDisabled", disabledText);
+        Set("ComboBoxBorderBrushDisabled", disabledBorder);
+        Set("ComboBoxDropDownBackground", white);
+        Set("ComboBoxDropDownBorderBrush", inputBorder);
+        Set("ComboBoxDropDownGlyphForeground", text);
+        Set("ComboBoxItemBackground", white);
+        Set("ComboBoxItemForeground", text);
+        foreach (var state in new[] { "PointerOver", "Pressed", "Selected", "SelectedPointerOver", "SelectedPressed" })
+        {
+            Set("ComboBoxItemBackground" + state, blue);
+            Set("ComboBoxItemForeground" + state, white);
+        }
 
-        // Disabled.
-        SaveAndSet(resources, "ButtonBackgroundDisabled", disabledLightBg);
-        SaveAndSet(resources, "ButtonForegroundDisabled", disabledText);
-        SaveAndSet(resources, "ButtonBorderBrushDisabled", new SolidColorBrush(Color.Parse("#999999")));
+        // Slider: thin gray groove, blue value fill and thumb.
+        Set("SliderTrackFill", B("#D6D6D6"));
+        Set("SliderTrackFillPointerOver", B("#D6D6D6"));
+        Set("SliderTrackFillPressed", B("#D6D6D6"));
+        Set("SliderTrackValueFill", blue);
+        Set("SliderTrackValueFillPointerOver", blue);
+        Set("SliderTrackValueFillPressed", darkBlue);
+        Set("SliderTrackValueFillDisabled", disabledFace);
+        Set("SliderThumbBackground", blue);
+        Set("SliderThumbBackgroundPointerOver", darkBlue);
+        Set("SliderThumbBackgroundPressed", darkBlue);
+        Set("SliderThumbBackgroundDisabled", disabledFace);
+        Set("SliderThumbBorderBrush", blue);
 
-        // ========== CheckBox ==========
-        // Checked states.
-        SaveAndSet(resources, "CheckBoxBackgroundChecked", controlFace);
-        SaveAndSet(resources, "CheckBoxBackgroundCheckedPointerOver", hoverColor);
-        SaveAndSet(resources, "CheckBoxBackgroundCheckedPressed", pressedColor);
-        SaveAndSet(resources, "CheckBoxBackgroundCheckedDisabled", disabledLightBg);
+        // ProgressBar: WinForms green fill on a light trough.
+        Set("ProgressBarForeground", B("#06B025"));
+        Set("ProgressBarBackground", B("#E6E6E6"));
+        Set("ProgressBarBorderBrush", B("#BCBCBC"));
 
-        SaveAndSet(resources, "CheckBoxBorderBrushChecked", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushCheckedPointerOver", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushCheckedPressed", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushCheckedDisabled", new SolidColorBrush(Color.Parse("#999999")));
+        // Expander (settings groups): flat header/content with group-box border.
+        Set("ExpanderHeaderBackground", face);
+        Set("ExpanderHeaderBackgroundPointerOver", hoverFace);
+        Set("ExpanderHeaderBackgroundPressed", pressedFace);
+        Set("ExpanderHeaderForeground", text);
+        Set("ExpanderHeaderBorderBrush", groupBorder);
+        Set("ExpanderContentBackground", face);
+        Set("ExpanderContentBorderBrush", groupBorder);
 
-        SaveAndSet(resources, "CheckBoxForegroundChecked", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundCheckedPointerOver", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundCheckedPressed", whiteBrush);
-        SaveAndSet(resources, "CheckBoxForegroundCheckedDisabled", disabledText);
+        // TabControl / TabItem.
+        Set("TabItemHeaderBackground", face);
+        Set("TabItemHeaderBackgroundPointerOver", hoverFace);
+        Set("TabItemHeaderBackgroundSelected", white);
+        Set("TabItemHeaderBackgroundPressed", pressedFace);
+        Set("TabItemHeaderForeground", text);
+        Set("TabItemHeaderForegroundPointerOver", text);
+        Set("TabItemHeaderForegroundSelected", text);
+        Set("TabItemHeaderForegroundPressed", text);
+        Set("TabItemHeaderSelectedPipeFill", blue);
 
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundChecked", blackText);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundCheckedPointerOver", blackText);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundCheckedPressed", whiteBrush);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundCheckedDisabled", disabledText);
-
-        // Unchecked states.
-        SaveAndSet(resources, "CheckBoxBackgroundUnchecked", whiteBrush);
-        SaveAndSet(resources, "CheckBoxBackgroundUncheckedPointerOver", whiteBrush);
-        SaveAndSet(resources, "CheckBoxBackgroundUncheckedPressed", whiteBrush);
-        SaveAndSet(resources, "CheckBoxBackgroundUncheckedDisabled", disabledLightBg);
-
-        SaveAndSet(resources, "CheckBoxBorderBrushUnchecked", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushUncheckedPointerOver", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushUncheckedPressed", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushUncheckedDisabled", new SolidColorBrush(Color.Parse("#999999")));
-
-        SaveAndSet(resources, "CheckBoxForegroundUnchecked", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundUncheckedPointerOver", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundUncheckedPressed", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundUncheckedDisabled", disabledText);
-
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundUnchecked", blackText);
-
-        // Indeterminate states.
-        SaveAndSet(resources, "CheckBoxBackgroundIndeterminate", controlFace);
-        SaveAndSet(resources, "CheckBoxBackgroundIndeterminatePointerOver", hoverColor);
-        SaveAndSet(resources, "CheckBoxBackgroundIndeterminatePressed", pressedColor);
-        SaveAndSet(resources, "CheckBoxBackgroundIndeterminateDisabled", disabledLightBg);
-
-        SaveAndSet(resources, "CheckBoxBorderBrushIndeterminate", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushIndeterminatePointerOver", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushIndeterminatePressed", borderColor);
-        SaveAndSet(resources, "CheckBoxBorderBrushIndeterminateDisabled", new SolidColorBrush(Color.Parse("#999999")));
-
-        SaveAndSet(resources, "CheckBoxForegroundIndeterminate", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundIndeterminatePointerOver", blackText);
-        SaveAndSet(resources, "CheckBoxForegroundIndeterminatePressed", whiteBrush);
-        SaveAndSet(resources, "CheckBoxForegroundIndeterminateDisabled", disabledText);
-
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundIndeterminate", blackText);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundIndeterminatePointerOver", blackText);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundIndeterminatePressed", whiteBrush);
-        SaveAndSet(resources, "CheckBoxCheckGlyphForegroundIndeterminateDisabled", disabledText);
-
-        // ========== ToggleSwitch ==========
-        // Container (background).
-        SaveAndSet(resources, "ToggleSwitchContainerBackground", controlFace);
-        SaveAndSet(resources, "ToggleSwitchContainerBackgroundPointerOver", hoverColor);
-        SaveAndSet(resources, "ToggleSwitchContainerBackgroundPressed", pressedColor);
-        SaveAndSet(resources, "ToggleSwitchContainerBackgroundDisabled", disabledLightBg);
-
-        // Fill (track color when on).
-        SaveAndSet(resources, "ToggleSwitchFillOn", controlFace);
-        SaveAndSet(resources, "ToggleSwitchFillOnPointerOver", hoverColor);
-        SaveAndSet(resources, "ToggleSwitchFillOnPressed", pressedColor);
-        SaveAndSet(resources, "ToggleSwitchFillOnDisabled", disabledLightBg);
-
-        // Fill (track color when off).
-        SaveAndSet(resources, "ToggleSwitchFillOff", controlFace);
-        SaveAndSet(resources, "ToggleSwitchFillOffPointerOver", hoverColor);
-        SaveAndSet(resources, "ToggleSwitchFillOffPressed", pressedColor);
-        SaveAndSet(resources, "ToggleSwitchFillOffDisabled", disabledLightBg);
-
-        // Stroke (border when on).
-        SaveAndSet(resources, "ToggleSwitchStrokeOn", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOnPointerOver", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOnPressed", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOnDisabled", new SolidColorBrush(Color.Parse("#999999")));
-
-        // Stroke (border when off).
-        SaveAndSet(resources, "ToggleSwitchStrokeOff", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOffPointerOver", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOffPressed", borderColor);
-        SaveAndSet(resources, "ToggleSwitchStrokeOffDisabled", new SolidColorBrush(Color.Parse("#999999")));
-
-        // Knob (thumb) when on.
-        SaveAndSet(resources, "ToggleSwitchKnobFillOn", blackText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOnPointerOver", blackText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOnPressed", blackText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOnDisabled", disabledText);
-
-        // Knob (thumb) when off.
-        SaveAndSet(resources, "ToggleSwitchKnobFillOff", tertiaryText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOffPointerOver", tertiaryText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOffPressed", tertiaryText);
-        SaveAndSet(resources, "ToggleSwitchKnobFillOffDisabled", disabledText);
-
-        // Content/text.
-        SaveAndSet(resources, "ToggleSwitchContentForeground", blackText);
-        SaveAndSet(resources, "ToggleSwitchHeaderForeground", blackText);
-
-        // ========== ComboBox ==========
-        // Base state.
-        SaveAndSet(resources, "ComboBoxBackground", whiteBrush);
-        SaveAndSet(resources, "ComboBoxForeground", blackText);
-        SaveAndSet(resources, "ComboBoxBorderBrush", borderColor);
-
-        // Pointer over.
-        SaveAndSet(resources, "ComboBoxBackgroundPointerOver", whiteBrush);
-        SaveAndSet(resources, "ComboBoxForegroundPointerOver", blackText);
-        SaveAndSet(resources, "ComboBoxBorderBrushPointerOver", borderColor);
-
-        // Pressed.
-        SaveAndSet(resources, "ComboBoxBackgroundPressed", whiteBrush);
-        SaveAndSet(resources, "ComboBoxForegroundPressed", blackText);
-        SaveAndSet(resources, "ComboBoxBorderBrushPressed", borderColor);
-
-        // Focused.
-        SaveAndSet(resources, "ComboBoxBackgroundFocused", whiteBrush);
-        SaveAndSet(resources, "ComboBoxForegroundFocused", blackText);
-
-        // Disabled.
-        SaveAndSet(resources, "ComboBoxBackgroundDisabled", disabledLightBg);
-        SaveAndSet(resources, "ComboBoxForegroundDisabled", disabledText);
-        SaveAndSet(resources, "ComboBoxBorderBrushDisabled", new SolidColorBrush(Color.Parse("#999999")));
-
-        // Dropdown menu.
-        SaveAndSet(resources, "ComboBoxDropDownBackground", controlFace);
-        SaveAndSet(resources, "ComboBoxDropDownBorderBrush", borderColor);
-
-        // Dropdown items.
-        SaveAndSet(resources, "ComboBoxItemBackground", whiteBrush);
-        SaveAndSet(resources, "ComboBoxItemBackgroundPointerOver", hoverColor);
-        SaveAndSet(resources, "ComboBoxItemBackgroundSelected", controlFace);
-
-        SaveAndSet(resources, "ComboBoxItemForeground", blackText);
-        SaveAndSet(resources, "ComboBoxItemForegroundPointerOver", blackText);
-
-        // ========== Slider ==========
-        // Track fill (progress).
-        SaveAndSet(resources, "SliderTrackFill", controlFace);
-        SaveAndSet(resources, "SliderTrackFillPointerOver", hoverColor);
-        SaveAndSet(resources, "SliderTrackFillPressed", pressedColor);
-        SaveAndSet(resources, "SliderTrackFillDisabled", disabledLightBg);
-
-        // Track value fill (background trough).
-        SaveAndSet(resources, "SliderTrackValueFill", controlFace);
-        SaveAndSet(resources, "SliderTrackValueFillPointerOver", hoverColor);
-        SaveAndSet(resources, "SliderTrackValueFillPressed", pressedColor);
-        SaveAndSet(resources, "SliderTrackValueFillDisabled", disabledLightBg);
-
-        // Thumb (slider button).
-        SaveAndSet(resources, "SliderThumbBackground", controlFace);
-        SaveAndSet(resources, "SliderThumbBackgroundPointerOver", hoverColor);
-        SaveAndSet(resources, "SliderThumbBackgroundPressed", pressedColor);
-        SaveAndSet(resources, "SliderThumbBackgroundDisabled", disabledLightBg);
-
-        SaveAndSet(resources, "SliderThumbBorderBrush", borderColor);
-
-        // ========== ProgressBar ==========
-        SaveAndSet(resources, "ProgressBarForeground", new SolidColorBrush(Color.Parse("#999999")));
-        SaveAndSet(resources, "ProgressBarBackground", controlFace);
-        SaveAndSet(resources, "ProgressBarBorderBrush", borderColor);
-
-        // Load custom ControlThemes for 3D bevel effects (TextBox, Button, CheckBox).
-        // In Avalonia, later-added Styles take precedence over earlier ones for equal specificity,
-        // so adding the custom theme after FluentAvalonia's base theme ensures our ControlThemes are used.
+        // Flat style overrides (Window font, CheckBox/RadioButton templates, card border) are
+        // added after FluentAvalonia's base theme so that they win.
         try
         {
             _ahkClassicStyleInclude = new StyleInclude(new Uri("avares://AutoTyper.Desktop/"))
