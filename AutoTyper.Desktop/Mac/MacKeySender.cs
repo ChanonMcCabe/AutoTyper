@@ -12,20 +12,42 @@ namespace AutoTyper.Desktop.Mac;
 /// <see cref="WinInputKeySender"/>, different native calls.
 /// </summary>
 /// <remarks>
-/// <see cref="CaptureTarget"/>, <see cref="BlurTargetAsync"/>,
-/// <see cref="FocusTargetAsync"/> and <see cref="PrepareForTypingAsync"/> are
-/// all no-ops — see their doc comments for why. This means the "Step Away"
-/// feature (<c>StepAwaySettings.Enabled</c>) silently has no effect on
-/// macOS: the passage types straight through a scheduled break. Likewise
-/// <c>IsTargetFocused</c> keeps its always-true default, so
-/// <c>RunSettings.PauseOnFocusLoss</c> has no effect here either. Typing
-/// itself is unaffected, because <c>CGEventPost</c> delivers to whatever has
-/// OS-level keyboard focus regardless of what this process last activated,
-/// exactly like <c>SendInput</c> on Windows.
+/// The typing target is an <em>app</em> (by pid), not a window: that's the
+/// granularity the Accessibility API activates at. Step away
+/// (<see cref="BlurTargetAsync"/>/<see cref="FocusTargetAsync"/>) and
+/// pause-on-focus-loss (<see cref="IsTargetFocused"/>) go through
+/// <see cref="MacFrontmostApp"/>, which is best-effort: if it fails on a real
+/// Mac, the target stays unset (pid 0) and both features quietly do nothing,
+/// as they did before they were implemented. Typing itself never depends on
+/// them, because <c>CGEventPost</c> delivers to whatever has OS-level
+/// keyboard focus, exactly like <c>SendInput</c> on Windows.
 /// </remarks>
 [SupportedOSPlatform("macos")]
 public sealed class MacKeySender : IKeySender
 {
+    private readonly Func<int> _getFocusedAppPid;
+    private readonly Func<int, bool> _makeFrontmost;
+    private readonly Func<int> _findFinderPid;
+    private readonly int _ownPid;
+
+    private int _targetPid;
+
+    public MacKeySender()
+        : this(MacFrontmostApp.GetFocusedAppPid, MacFrontmostApp.TryMakeFrontmost,
+            MacFrontmostApp.FindFinderPid, Environment.ProcessId)
+    {
+    }
+
+    /// <summary>Seam for tests, so target tracking can be checked without native calls.</summary>
+    internal MacKeySender(Func<int> getFocusedAppPid, Func<int, bool> makeFrontmost,
+        Func<int> findFinderPid, int ownPid)
+    {
+        _getFocusedAppPid = getFocusedAppPid;
+        _makeFrontmost = makeFrontmost;
+        _findFinderPid = findFinderPid;
+        _ownPid = ownPid;
+    }
+
     public Task SendCharAsync(char c)
     {
         switch (c)
@@ -48,28 +70,66 @@ public sealed class MacKeySender : IKeySender
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// No-op. Activating another app from a background process needs either
-    /// hand-rolled <c>objc_msgSend</c> interop into <c>NSRunningApplication</c>
-    /// (a wrong selector/argument shape is undefined behavior — a process
-    /// crash, not a catchable exception — and this can never be exercised
-    /// before it ships) or shelling out to System Events via
-    /// <c>osascript</c> (which needs a second, per-target-app Automation
-    /// permission prompt that would interrupt mid-typing-run, on top of the
-    /// Accessibility grant this app already needs). Both were rejected as
-    /// disproportionate to a feature that is off by default. Revisit once a
-    /// real Mac is available to validate an <c>objc_msgSend</c>-based
-    /// <c>NSRunningApplication.activate</c> implementation against.
-    /// </summary>
+    /// <inheritdoc />
+    /// <remarks>
+    /// Records the focused app's pid, ignoring AutoTyper itself so it never
+    /// steps away from and back into its own window.
+    /// </remarks>
     public void CaptureTarget()
     {
+        int focused = _getFocusedAppPid();
+        _targetPid = focused == _ownPid ? 0 : focused;
     }
 
-    /// <inheritdoc cref="CaptureTarget"/>
-    public Task BlurTargetAsync() => Task.CompletedTask;
+    /// <inheritdoc />
+    /// <remarks>
+    /// A failed focus query (pid 0) counts as focused, so an Accessibility
+    /// failure can never strand a run waiting for focus.
+    /// </remarks>
+    public bool IsTargetFocused()
+    {
+        if (_targetPid == 0)
+        {
+            return true;
+        }
 
-    /// <inheritdoc cref="CaptureTarget"/>
-    public Task FocusTargetAsync() => Task.CompletedTask;
+        int focused = _getFocusedAppPid();
+        return focused == 0 || focused == _targetPid;
+    }
+
+    /// <summary>
+    /// Step away: make Finder (which owns the desktop) the active app, the
+    /// macOS counterpart of Windows activating the shell. The target app
+    /// doesn't move; its caret just goes idle. No-op if no target was
+    /// captured or Finder isn't running.
+    /// </summary>
+    public Task BlurTargetAsync()
+    {
+        if (_targetPid != 0 && _findFinderPid() is var finder and not 0)
+        {
+            _makeFrontmost(finder);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Step back: re-activate the target app, then let the activation settle
+    /// before the next keystroke. No-op if no target was captured.
+    /// </summary>
+    public async Task FocusTargetAsync()
+    {
+        if (_targetPid == 0)
+        {
+            return;
+        }
+
+        _makeFrontmost(_targetPid);
+
+        // Intentionally untokened: focus must be handed back even when the run
+        // was cancelled mid-step-away.
+        await Task.Delay(120);
+    }
 
     /// <summary>
     /// No-op: this exists on Windows purely to route around an Alt-menu-focus

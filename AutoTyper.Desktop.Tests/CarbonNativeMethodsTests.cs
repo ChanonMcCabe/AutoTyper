@@ -55,4 +55,16 @@ public class CarbonNativeMethodsTests
         Assert.Equal(1u << 11, CarbonNativeMethods.OptionKey);
         Assert.Equal(1u << 12, CarbonNativeMethods.ControlKey);
     }
+
+    [Fact]
+    public void AccessibilityConstants_MatchSdkHeaders()
+    {
+        // kCFStringEncodingUTF8 from <CFString.h>; attribute names from
+        // <AXAttributeConstants.h>. A typo in an attribute name makes the AX
+        // call fail with kAXErrorAttributeUnsupported, which the step-away
+        // code treats as "do nothing" — silently, with no error.
+        Assert.Equal(0x08000100u, CoreFoundationNativeMethods.KCFStringEncodingUTF8);
+        Assert.Equal("AXFocusedApplication", AccessibilityNativeMethods.KAXFocusedApplicationAttribute);
+        Assert.Equal("AXFrontmost", AccessibilityNativeMethods.KAXFrontmostAttribute);
+    }
 }

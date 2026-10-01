@@ -10,7 +10,7 @@ A desktop utility that types text like a human would — with natural pacing, dr
 - **WPM drift**: typing speed wanders gradually instead of staying perfectly constant.
 - **Typo injection**: occasional realistic mistakes (adjacent QWERTY keys), corrected either immediately or after typing a few more characters.
 - **Phrase bursts**: short runs of words typed faster, with pauses before and after.
-- **Step-away**: every N words, focus leaves the target window for a while and then comes back (Windows only).
+- **Step-away**: every N words, focus leaves the target window for a while and then comes back.
 - **Pause/resume and stop**: from the main window, the tray menu, or hotkeys. Typing also pauses automatically if the target window loses focus (Windows only).
 - **Progress**: a progress bar with the current WPM and the time remaining, a time estimate before you start, and a summary when the run finishes.
 - **Passages**: paste text, open a `.txt`/`.md` file, or drag a file onto the passage box. You can keep or collapse the passage's line breaks and spacing.
@@ -56,7 +56,7 @@ Settings are saved to `%AppData%\AutoTyper\settings.json` on Windows and `~/.con
 ## macOS notes
 
 - AutoTyper needs **Accessibility** access to send keystrokes: System Settings → Privacy & Security → Accessibility. Until you grant it, **Activate** explains what's missing instead of silently typing nothing.
-- The step-away and pause-on-focus-loss features have no effect on macOS yet. Typing continues straight through them.
+- Step-away and pause-on-focus-loss track the target *app*, not a single window. Stepping away briefly brings Finder to the front. These features haven't been tested on a real Mac yet: if they don't work on your macOS version, typing simply continues through them.
 - macOS builds are ad-hoc signed, not notarized (there's no paid Apple Developer account). On first launch, Gatekeeper blocks the app as being "from an unidentified developer". Right-click the app and choose **Open** to run it anyway.
 
 ## Build from source

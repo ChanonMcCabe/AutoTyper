@@ -49,7 +49,8 @@ public static class PlatformServices
     /// <param name="getOwnWindowHandle">
     /// Supplies AutoTyper's own native window handle so the sender never
     /// captures it as the typing target. Unused on macOS, where
-    /// <see cref="MacKeySender"/>'s target-capture is a documented no-op.
+    /// <see cref="MacKeySender"/> captures an app by pid and excludes its own
+    /// process instead.
     /// </param>
     public static IKeySender CreateKeySender(Func<IntPtr> getOwnWindowHandle)
     {
